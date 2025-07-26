@@ -1,1 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARvia - Website Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.48.0/min/vs/loader.min.js"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        /* General Reset & Base Styles */
+        * {
+            box-sizing: border-box;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Prevent main page scrollbars */
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            display: block; /* Ensure it behaves as a block for full width/height */
+        }
 
+        /* Main Container */
+        .container {
+            background-color: #1a1a1a;
+            border-radius: 0; /* No rounded corners for the outermost container */
+            box-shadow: none;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Contain internal scrolling */
+            border: none;
+        }
+
+        /* Header */
+        .header {
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            padding: 0.9375rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #FFFFFF;
+            flex-shrink: 0; /* Prevent shrinking */
+            width: 100%;
+        }
+        .logo-section {
+            display: flex;
+            align-items: center;
+        }
+        .arvia-logo {
+            width: 2.5rem;
+            height: 2.5rem;
+            margin-right: 0.625rem;
+            border-radius: 0.3125rem;
+            object-fit: contain;
+        }
+        .arvia-text {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #805BE9;
+            margin-left: 0.3125rem;
+        }
+        .header-icons {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .header-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 2px solid #FFFFFF;
+            border-radius: 0.3125rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #FFFFFF;
+            background-color: #0a0a0a;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        .header-icon:hover {
+            background-color: #BB86FC;
+            color: #000000;
+        }
+        .header-icon.selected {
+            background-color: #BB86FC;
+            color: #000000;
+            border-color: #BB86FC;
+        }
+
+        /* View Containers (Generator, Editor, Preview, Code) */
+        .view-container {
+            flex-grow: 1; /* Take remaining vertical space */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Manage internal scrolling */
+            width: 100%; /* Take full horizontal space */
+        }
+        .view-container.hidden {
+            display: none;
+        }
+
+        /* Generator View */
+        .generator-view {
+            padding: 1.5625rem 1.875rem;
+            background-color: #1a1a1a;
+            flex-grow: 1;
+            overflow-y: auto; /* Allow scrolling for content */
+            width: 100%;
+        }
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+        .input-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #BB86FC;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .logo-url-input-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.625rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+        }
+        .logo-url-input-wrapper {
+            flex-grow: 1;
+            min-width: 11.25rem; /* Ensure input doesn't get too small */
+        }
+        .text-input {
+            border: 1px solid #FFFFFF;
+            border-radius: 0.3125rem;
+            padding: 0.5rem 0.625rem;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 1rem;
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .text-input:focus {
+            outline: none;
+            border-color: #BB86FC;
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.5);
+        }
+        .textarea-input {
+            border: 1px solid #FFFFFF;
+            border-radius: 0.3125rem;
+            padding: 0.625rem 0.75rem;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 1.1rem;
+            min-height: 7.5rem;
+            resize: vertical;
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .textarea-input:focus {
+            outline: none;
+            border-color: #BB86FC;
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.5);
+        }
+        .logo-preview-wrapper {
+            width: 3.125rem;
+            height: 3.125rem;
+            border: 1px solid #FFFFFF;
+            background-color: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border-radius: 0.3125rem;
+            flex-shrink: 0;
+        }
+        .logo-preview-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        .no-image-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            color: #888;
+        }
+
+        /* Pages Section */
+        .pages-section {
+            margin-top: 1.875rem;
+            border: 1px solid #FFFFFF;
+            border-radius: 0.3125rem;
+            flex-shrink: 0;
+            width: 100%;
+        }
+        .pages-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            background-color: #0a0a0a;
+            border-bottom: 1px solid #333333;
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: #FFFFFF;
+        }
+        .add-page-icon {
+            font-size: 1.2rem;
+            color: #BB86FC;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .add-page-icon:hover {
+            transform: scale(1.1);
+        }
+        .page-list {
+            background-color: #1a1a1a;
+            max-height: 18.75rem;
+            overflow-y: auto;
+        }
+        .page-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid #333333;
+            color: #FFFFFF;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .page-item:hover {
+            background-color: #2a2a2a;
+        }
+        .page-item:last-child {
+            border-bottom: none;
+        }
+        .page-name {
+            font-size: 1.1rem;
+            flex-grow: 1;
+        }
+        .page-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .action-icon {
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #FFFFFF;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        .action-icon:hover {
+            color: #BB86FC;
+            transform: scale(1.1);
+        }
+        .sort-icon {
+            font-size: 0.9rem;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #1a1a1a;
+            padding: 1.875rem;
+            border-radius: 0.625rem;
+            box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 25rem;
+            transform: translateY(-1.25rem);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #FFFFFF;
+            margin-bottom: 1.25rem;
+            text-align: center;
+        }
+        .modal-input {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            border: 1px solid #FFFFFF;
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            font-size: 1rem;
+            border-radius: 0.3125rem;
+            margin-bottom: 1.25rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .modal-input:focus {
+            outline: none;
+            border-color: #BB86FC;
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.5);
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.625rem;
+        }
+        .modal-button {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.3125rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .modal-button.primary {
+            background-color: #BB86FC;
+            color: #000000;
+        }
+        .modal-button.primary:hover {
+            background-color: #9C27B0;
+            transform: translateY(-2px);
+        }
+        .modal-button.secondary {
+            background-color: #333333;
+            color: #FFFFFF;
+        }
+        .modal-button.secondary:hover {
+            background-color: #555555;
+            transform: translateY(-2px);
+        }
+        .modal-message {
+            color: #FFFFFF;
+            margin-bottom: 1.25rem;
+            text-align: center;
+        }
+
+        /* Page Editor View */
+        .page-editor-view {
+            flex-grow: 1;
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+        }
+        .page-editor-header {
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            padding: 0.9375rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #333333;
+            flex-shrink: 0;
+        }
+        .page-editor-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.9375rem;
+        }
+        .page-editor-back-btn {
+            font-size: 1.8rem;
+            color: #BB86FC;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .page-editor-back-btn:hover {
+            transform: translateX(-0.3125rem);
+        }
+        .page-editor-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+        .page-editor-plus-btn {
+            font-size: 1.8rem;
+            color: #BB86FC;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        .page-editor-plus-btn:hover {
+            transform: scale(1.1);
+        }
+        .page-editor-content {
+            flex-grow: 1;
+            padding: 1.5625rem 1.875rem;
+            overflow-y: auto;
+        }
+        .page-editor-textarea {
+            width: 100%;
+            height: 100%;
+            min-height: 12.5rem;
+            border: 1px solid #FFFFFF;
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            font-size: 1.1rem;
+            padding: 0.9375rem;
+            box-sizing: border-box;
+            resize: vertical;
+            border-radius: 0.3125rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .page-editor-textarea:focus {
+            outline: none;
+            border-color: #BB86FC;
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.5);
+        }
+
+        /* Preview View */
+        .preview-view {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #000000;
+            border: 2px solid #BB86FC;
+            border-radius: 0.625rem;
+            overflow: hidden;
+        }
+        .preview-header {
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            padding: 0.3rem 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #BB86FC;
+            flex-shrink: 0;
+            width: 100%;
+        }
+        .preview-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .mac-dots {
+            display: flex;
+            gap: 0.2rem;
+            margin-right: 0.4rem;
+        }
+        .mac-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+        }
+        .mac-dot.red { background-color: #FF605C; }
+        .mac-dot.yellow { background-color: #FFBD44; }
+        .mac-dot.green { background-color: #00CA4E; }
+
+        .preview-header .header-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            font-size: 0.8rem;
+            border: 1px solid #FFFFFF;
+            border-radius: 0.2rem;
+        }
+
+        .menu-button {
+            font-size: 1.8rem;
+            color: #BB86FC;
+            cursor: pointer;
+            display: none; /* Hidden by default, shown on mobile */
+        }
+        .preview-content-area {
+            display: flex;
+            flex-direction: row;
+            flex-grow: 1;
+            width: 100%;
+            overflow: hidden;
+        }
+        .preview-sidebar {
+            width: 15.625rem;
+            background-color: #0a0a0a;
+            border-right: 2px solid #FFFFFF;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding: 1.25rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-logo-section {
+            display: none;
+        }
+        .sidebar-title {
+            display: none;
+        }
+        .sidebar-page-item {
+            padding: 0.625rem 1.25rem;
+            color: #FFFFFF;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .sidebar-page-item:hover {
+            background-color: #2a2a2a;
+            color: #BB86FC;
+        }
+        .sidebar-page-item.active {
+            background-color: #BB86FC;
+            color: #000000;
+            font-weight: bold;
+        }
+        .preview-main-content {
+            flex-grow: 1;
+            padding: 1.875rem;
+            background-color: #1a1a1a;
+            overflow-y: auto;
+            color: #FFFFFF;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .actual-page-content {
+            flex-grow: 1;
+            margin-bottom: 1.25rem;
+        }
+        .preview-main-content h1, .preview-main-content h2, .preview-main-content h3 {
+            color: #BB86FC;
+            margin-bottom: 0.9375rem;
+        }
+        .preview-main-content p {
+            margin-bottom: 0.625rem;
+            line-height: 1.6;
+        }
+        .preview-main-content pre {
+            background-color: #0a0a0a;
+            padding: 0.9375rem;
+            border-radius: 0.3125rem;
+            overflow-x: auto;
+            position: relative;
+            margin-bottom: 0.9375rem;
+        }
+        .preview-main-content pre code {
+            display: block;
+            white-space: pre;
+        }
+        .copy-code-btn {
+            position: absolute;
+            top: 0.625rem;
+            right: 0.625rem;
+            background-color: #BB86FC;
+            color: #000000;
+            padding: 0.3125rem 0.5rem;
+            border-radius: 0.3125rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        .copy-code-btn:hover {
+            opacity: 1;
+        }
+        .preview-main-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 0.9375rem;
+            overflow-x: auto;
+            display: block;
+            border-radius: 0.3125rem;
+        }
+        .preview-main-content th, .preview-main-content td {
+            border: 1px solid #555555;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        .preview-main-content th {
+            background-color: #2a2a2a;
+            color: #BB86FC;
+        }
+        .preview-main-content ul, .preview-main-content ol {
+            margin-left: 1.25rem;
+            margin-bottom: 0.625rem;
+        }
+        .preview-main-content li {
+            margin-bottom: 0.3125rem;
+        }
+        .preview-main-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0.3125rem;
+        }
+        .formula-block {
+            overflow-x: auto;
+            padding: 0.9375rem;
+            background-color: #0a0a0a;
+            border: 1px solid #BB86FC;
+            border-radius: 0.3125rem;
+            margin-bottom: 0.9375rem;
+            white-space: nowrap;
+        }
+        .preview-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.625rem;
+            border-top: 1px solid #333333;
+            flex-shrink: 0;
+            width: 100%;
+        }
+        .pagination-button {
+            background-color: #BB86FC;
+            color: #000000;
+            padding: 0.625rem 1rem;
+            border-radius: 0.3125rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .pagination-button:hover:not(:disabled) {
+            background-color: #9C27B0;
+            transform: translateY(-2px);
+        }
+        .pagination-button:disabled {
+            background-color: #555555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Mobile Sidebar Overlay */
+        .mobile-sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .mobile-sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .mobile-sidebar {
+            width: 50vw;
+            height: 100%;
+            background-color: #0a0a0a;
+            padding: 1.25rem 0;
+            box-shadow: 0.125rem 0 0.625rem rgba(0, 0, 0, 0.5);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+        .mobile-sidebar-overlay.show .mobile-sidebar {
+            transform: translateX(0);
+        }
+        .mobile-sidebar .sidebar-title {
+            display: none;
+        }
+        .mobile-sidebar .sidebar-page-item {
+            padding: 0.625rem 1.25rem;
+        }
+        .mobile-sidebar .sidebar-logo-section {
+            display: none;
+        }
+
+        /* Content Type Modals */
+        .add-content-type-modal-content {
+            background-color: #1a1a1a;
+            padding: 1.25rem;
+            border-radius: 0.625rem;
+            box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 18.75rem;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .content-type-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .content-type-list-item {
+            padding: 0.625rem 0.9375rem;
+            color: #FFFFFF;
+            cursor: pointer;
+            border-bottom: 1px solid #333333;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .content-type-list-item:hover {
+            background-color: #2a2a2a;
+            color: #BB86FC;
+            transform: translateX(5px);
+        }
+        .content-type-list-item:last-child {
+            border-bottom: none;
+        }
+        .modal-form-group {
+            margin-bottom: 0.9375rem;
+        }
+        .modal-form-label {
+            display: block;
+            color: #BB86FC;
+            margin-bottom: 0.3125rem;
+            font-size: 0.9rem;
+        }
+        .modal-select {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            border: 1px solid #FFFFFF;
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            border-radius: 0.3125rem;
+            font-size: 1rem;
+            margin-bottom: 0.9375rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .modal-select:focus {
+            outline: none;
+            border-color: #BB86FC;
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.5);
+        }
+        .modal-radio-group {
+            display: flex;
+            gap: 0.9375rem;
+            margin-bottom: 0.9375rem;
+        }
+        .modal-radio-group label {
+            color: #FFFFFF;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3125rem;
+        }
+        .modal-radio-group input[type="radio"] {
+            accent-color: #BB86FC;
+        }
+
+        /* Code View */
+        .code-view {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #000000;
+            overflow: hidden;
+        }
+        .code-header {
+            background-color: #0a0a0a;
+            color: #FFFFFF;
+            padding: 0.9375rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #BB86FC;
+            flex-shrink: 0;
+        }
+        .code-header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .code-header-buttons { /* New container for buttons */
+            display: flex;
+            gap: 0.625rem; /* Space between buttons */
+        }
+        .code-editor-container {
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .code-action-button {
+            background-color: #BB86FC;
+            color: #000000;
+            padding: 0.625rem 1rem;
+            border-radius: 0.3125rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center icon */
+            width: 2.5rem; /* Fixed width for icon-only buttons */
+            height: 2.5rem; /* Fixed height for icon-only buttons */
+            font-size: 1.2rem; /* Icon size */
+        }
+        .code-action-button span { /* Hide text for icon-only buttons */
+            display: none;
+        }
+        .code-action-button:hover {
+            background-color: #9C27B0;
+            transform: translateY(-2px);
+        }
+        .code-action-button:disabled {
+            background-color: #555555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Message Box for Errors/Success */
+        #messageBox {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #BB86FC;
+            color: #000000;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.3125rem;
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* Space out text and close icon */
+            gap: 0.5rem;
+            width: 80%; /* 80% width */
+            max-width: 500px; /* Max width for larger screens */
+        }
+        #messageBox.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+        #messageBox.error {
+            background-color: #FF605C; /* Red for errors */
+            color: #FFFFFF;
+        }
+        #messageBox.success {
+            background-color: #00CA4E; /* Green for success */
+            color: #FFFFFF;
+        }
+        .message-close-btn {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 0.5rem;
+            line-height: 1; /* Align icon vertically */
+        }
+
+        /* Media Queries for Responsiveness */
+        @media (max-width: 48rem) { /* Mobile */
+            .header {
+                padding: 0.625rem 0.9375rem;
+            }
+            .arvia-text {
+                font-size: 1.8rem;
+            }
+            .arvia-logo {
+                width: 2.1875rem;
+                height: 2.1875rem;
+            }
+            .header-icon {
+                width: 2.1875rem;
+                height: 2.1875rem;
+                font-size: 1.2rem;
+            }
+            .generator-view {
+                padding: 1.25rem;
+            }
+            .input-label {
+                font-size: 1.1rem;
+            }
+            .logo-url-input-wrapper {
+                flex-basis: calc(100% - 3.75rem);
+                min-width: unset;
+            }
+            .text-input, .textarea-input {
+                padding: 0.5rem 0.625rem;
+                font-size: 1rem;
+            }
+            .pages-header {
+                padding: 0.625rem 0.9375rem;
+                font-size: 1.1rem;
+            }
+            .page-item {
+                padding: 0.625rem 0.9375rem;
+            }
+            .page-name {
+                font-size: 1rem;
+            }
+            .action-icon {
+                font-size: 1rem;
+            }
+            .sort-icon {
+                font-size: 0.8rem;
+            }
+            .logo-preview-wrapper {
+                width: 3.125rem;
+                height: 3.125rem;
+                margin-top: 0;
+                margin-left: 0;
+            }
+            .modal-content {
+                width: 95%;
+                padding: 1.25rem;
+            }
+            .page-editor-header {
+                padding: 0.625rem 0.9375rem;
+            }
+            .page-editor-back-btn, .page-editor-plus-btn {
+                font-size: 1.5rem;
+            }
+            .page-editor-title {
+                font-size: 1.5rem;
+            }
+            .page-editor-content {
+                padding: 1.25rem;
+            }
+            .page-editor-textarea {
+                min-height: 9.375rem;
+            }
+
+            .preview-view {
+                flex-direction: column;
+            }
+            .preview-sidebar {
+                display: none; /* Hide fixed sidebar on mobile */
+            }
+            .menu-button {
+                font-size: 1.5rem;
+                display: block; /* Show menu button on mobile */
+                order: 2; /* Order it after logo in header */
+            }
+            .preview-header .logo-section {
+                order: 1;
+                display: flex; /* Show ARvia logo/text on mobile preview header */
+            }
+            .preview-main-content {
+                padding: 1.25rem;
+            }
+            .sidebar-logo-section {
+                display: none;
+            }
+            .mobile-sidebar .sidebar-logo-section {
+                display: flex;
+            }
+            .code-action-button {
+                width: 2.2rem;
+                height: 2.2rem;
+                font-size: 1rem;
+                padding: 0.5rem; /* Adjust padding for smaller buttons */
+            }
+        }
+
+        @media (min-width: 48.0625rem) { /* Desktop */
+            .preview-header .logo-section {
+                display: none; /* Hide ARvia logo/text on desktop preview header */
+            }
+            .menu-button {
+                display: none; /* Hide menu button on desktop */
+            }
+            .code-action-button span { /* Show text on desktop */
+                display: inline-block;
+                margin-left: 0.5rem;
+            }
+            .code-action-button {
+                width: auto; /* Auto width for text + icon */
+                padding: 0.625rem 1rem; /* Restore padding */
+            }
+        }
+
+        @media (orientation: landscape) and (max-width: 62rem) { /* Landscape Tablet */
+            .preview-sidebar {
+                width: 12.5rem; /* Slightly smaller sidebar */
+            }
+            .preview-main-content {
+                padding: 1.25rem; /* Reduced padding */
+            }
+        }
+
+        @media (orientation: portrait) and (max-width: 48rem) { /* Portrait Mobile */
+            .preview-header {
+                padding: 0.5rem 0.75rem;
+            }
+            .preview-main-content {
+                padding: 0.9375rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo-section">
+                <img src="https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg" alt="ARvia Logo" class="arvia-logo">
+                <span class="arvia-text">ARvia</span>
+            </div>
+            <div class="header-icons">
+                <div id="editIcon" class="header-icon selected" aria-label="Edit Website"><i class="fas fa-edit"></i></div>
+                <div id="previewIcon" class="header-icon" aria-label="Preview Website"><i class="fas fa-eye"></i></div>
+                <div id="codeIcon" class="header-icon" aria-label="View Code"><i class="fas fa-code"></i></div>
+            </div>
+        </header>
+
+        <main id="generatorView" class="generator-view view-container hidden">
+            <div class="input-group">
+                <label for="name" class="input-label">Website Name</label>
+                <input type="text" id="name" class="text-input" placeholder="My Awesome Website">
+            </div>
+            <div class="input-group logo-url-input-group">
+                <div class="logo-url-input-wrapper">
+                    <label for="logo-url" class="input-label">Logo URL</label>
+                    <input type="url" id="logo-url" class="text-input" placeholder="https://example.com/logo.png">
+                </div>
+                <div class="logo-preview-wrapper">
+                    <img id="logoPreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 17V7a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z'%3E%3C/path%3E%3Cline x1='12' y1='13' x2='12' y2='17'%3E%3C/line%3E%3Cpolyline points='9 10 12 13 15 10'%3E%3C/polyline%3E%3C/svg%3E" alt="Logo Preview" class="logo-preview-img">
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="favicon-url" class="input-label">Favicon URL</label>
+                <input type="url" id="favicon-url" class="text-input" placeholder="https://example.com/favicon.ico">
+            </div>
+            <div class="input-group">
+                <label for="meta" class="input-label">Meta Description</label>
+                <textarea id="meta" class="textarea-input" placeholder="A brief description of your website for search engines."></textarea>
+            </div>
+
+            <!-- New Social Sharing (SEO) Section -->
+            <div class="input-group">
+                <label class="input-label">Social Sharing (SEO)</label>
+                <div class="input-group">
+                    <label for="og-title" class="input-label" style="font-size: 1rem;">Open Graph Title</label>
+                    <input type="text" id="og-title" class="text-input" placeholder="Title for social media shares">
+                </div>
+                <div class="input-group">
+                    <label for="og-description" class="input-label" style="font-size: 1rem;">Open Graph Description</label>
+                    <textarea id="og-description" class="textarea-input" placeholder="Description for social media shares"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="og-image-url" class="input-label" style="font-size: 1rem;">Open Graph Image URL</label>
+                    <input type="url" id="og-image-url" class="text-input" placeholder="https://example.com/share-image.jpg">
+                </div>
+                <div class="input-group">
+                    <label for="twitter-card-type" class="input-label" style="font-size: 1rem;">Twitter Card Type</label>
+                    <select id="twitter-card-type" class="text-input">
+                        <option value="summary">Summary Card</option>
+                        <option value="summary_large_image">Summary Card with Large Image</option>
+                        <option value="app">App Card</option>
+                        <option value="player">Player Card</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- New Hosting URL Input -->
+            <div class="input-group">
+                <label for="hosting-url" class="input-label">Hosting URL</label>
+                <input type="url" id="hosting-url" class="text-input" placeholder="https://yourdomain.com (e.g., for social sharing links)">
+            </div>
+
+            <div class="input-group">
+                <label for="copyright-holder" class="input-label">Copyright Holder Name</label>
+                <input type="text" id="copyright-holder" class="text-input" placeholder="Your Company Name">
+            </div>
+            <div class="input-group">
+                <label for="copyright-year" class="input-label">Copyright Year</label>
+                <input type="number" id="copyright-year" class="text-input" placeholder="2023" value="2025">
+            </div>
+            <div class="input-group">
+                <label for="contact-email" class="input-label">Contact Email</label>
+                <input type="email" id="contact-email" class="text-input" placeholder="contact@example.com">
+            </div>
+            <div class="input-group">
+                <label for="facebook-url" class="input-label">Facebook URL</label>
+                <input type="url" id="facebook-url" class="text-input" placeholder="https://facebook.com/yourpage">
+            </div>
+            <div class="input-group">
+                <label for="twitter-url" class="input-label">Twitter URL</label>
+                <input type="url" id="twitter-url" class="text-input" placeholder="https://twitter.com/yourhandle">
+            </div>
+            <div class="input-group">
+                <label for="linkedin-url" class="input-label">LinkedIn URL</label>
+                <input type="url" id="linkedin-url" class="text-input" placeholder="https://linkedin.com/in/yourprofile">
+            </div>
+
+            <div class="pages-section">
+                <div class="pages-header">
+                    <span>PAGE #</span>
+                    <span class="add-page-icon" id="openAddPageModal" aria-label="Add New Page"><i class="fas fa-plus"></i></span>
+                </div>
+                <div id="pageList" class="page-list">
+                </div>
+            </div>
+        </main>
+
+        <div id="pageEditorView" class="page-editor-view view-container hidden">
+            <div class="page-editor-header">
+                <div class="page-editor-header-left">
+                    <span id="pageEditorBackBtn" class="page-editor-back-btn" aria-label="Back to Generator"><i class="fas fa-arrow-left"></i></span>
+                    <span id="pageEditorTitle" class="page-editor-title">Page Name</span>
+                </div>
+                <div>
+                    <span id="pageEditorPlusBtn" class="page-editor-plus-btn" aria-label="Add Content Block"><i class="fas fa-plus"></i></span>
+                </div>
+            </div>
+            <div class="page-editor-content">
+                <textarea id="pageContentEditor" class="page-editor-textarea" placeholder="Start writing your page content here..."></textarea>
+            </div>
+        </div>
+
+        <div id="previewView" class="preview-view view-container">
+            <div class="preview-header">
+                <div class="mac-dots">
+                    <div class="mac-dot red"></div>
+                    <div class="mac-dot yellow"></div>
+                    <div class="mac-dot green"></div>
+                </div>
+                <div class="preview-header-controls">
+                    <span id="refreshPreviewBtn" class="header-icon" aria-label="Refresh Preview"><i class="fas fa-sync-alt"></i></span>
+                    <span id="openInNewTabBtn" class="header-icon" aria-label="Open in New Tab"><i class="fas fa-external-link-alt"></i></span>
+                </div>
+            </div>
+
+            <div class="preview-content-area">
+                <div id="previewFixedSidebar" class="preview-sidebar">
+                    <div id="previewSidebarPageList">
+                    </div>
+                </div>
+
+                <iframe id="previewIframe" class="preview-main-content" srcdoc="<h1>Welcome to your Website Preview!</h1><p>Select a page from the sidebar to see its content.</p>"></iframe>
+            </div>
+        </div>
+
+        <div id="codeView" class="code-view view-container hidden">
+            <div class="code-header">
+                <span class="code-header-title">Code</span>
+                <div class="code-header-buttons">
+                    <button id="loadUrlHtmlBtn" class="code-action-button" aria-label="Load HTML from URL">
+                        <i class="fas fa-globe"></i> <span>Load HTML</span>
+                    </button>
+                    <button id="editCodeBtn" class="code-action-button" aria-label="Edit Code">
+                        <i class="fas fa-edit"></i> <span>Edit Code</span>
+                    </button>
+                    <button id="copyCodeBtn" class="code-action-button" aria-label="Copy Code to Clipboard">
+                        <i class="fas fa-copy"></i> <span>Copy Code</span>
+                    </button>
+                </div>
+            </div>
+            <div id="codeEditorContainer" class="code-editor-container"></div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addPageModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add New Page</h3>
+            <input type="text" id="modalNewPageName" class="modal-input" placeholder="Enter page name">
+            <div class="modal-buttons">
+                <button id="cancelAddPageBtn" class="modal-button secondary">Cancel</button>
+                <button id="confirmAddPageBtn" class="modal-button primary">Add Page</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editPageModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Edit Page Name</h3>
+            <input type="text" id="modalEditPageName" class="modal-input" placeholder="Enter new page name">
+            <div class="modal-buttons">
+                <button id="cancelEditPageBtn" class="modal-button secondary">Cancel</button>
+                <button id="saveEditPageBtn" class="modal-button primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmDeleteModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Confirm Deletion</h3>
+            <p class="modal-message">Are you sure you want to delete "<span id="pageToDeleteName"></span>"? This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button id="cancelDeleteBtn" class="modal-button secondary">Cancel</button>
+                <button id="confirmDeleteBtn" class="modal-button primary">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobileSidebarOverlay" class="modal-overlay">
+        <div id="mobileSidebar" class="mobile-sidebar">
+            <div id="mobileSidebarPageList">
+            </div>
+        </div>
+    </div>
+
+    <div id="addContentTypeModalOverlay" class="modal-overlay">
+        <div class="add-content-type-modal-content modal-content">
+            <h3 class="modal-title">Add Content Type</h3>
+            <ul class="content-type-list">
+                <li class="content-type-list-item" data-type="heading">Heading</li>
+                <li class="content-type-list-item" data-type="list">List</li>
+                <li class="content-type-list-item" data-type="table">Table</li>
+                <li class="content-type-list-item" data-type="formula">Numerical Formula (LaTeX)</li>
+                <li class="content-type-list-item" data-type="url">URL</li>
+                <li class="content-type-list-item" data-type="code">Code Block</li>
+                <li class="content-type-list-item" data-type="image">Image (URL)</li>
+                <li class="content-type-list-item" data-type="pdf">PDF (URL)</li>
+                <li class="content-type-list-item" data-type="iframe">Iframe (URL)</li>
+                <li class="content-type-list-item" data-type="video">Video (URL)</li>
+                <li class="content-type-list-item" data-type="map">Map (URL)</li>
+                <li class="content-type-list-item" data-type="bold">Bold Text</li>
+                <li class="content-type-list-item" data-type="italics">Italic Text</li>
+            </ul>
+            <div class="modal-buttons">
+                <button id="cancelAddContentTypeBtn" class="modal-button secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addHeadingModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Heading</h3>
+            <div class="modal-form-group">
+                <label for="headingText" class="modal-form-label">Heading Text</label>
+                <input type="text" id="headingText" class="modal-input" placeholder="Enter heading text">
+            </div>
+            <div class="modal-form-group">
+                <label for="headingLevel" class="modal-form-label">Heading Level</label>
+                <select id="headingLevel" class="modal-select">
+                    <option value="h1">H1</option>
+                    <option value="h2">H2</option>
+                    <option value="h3">H3</option>
+                    <option value="h4">H4</option>
+                    <option value="h5">H5</option>
+                    <option value="h6">H6</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddHeadingBtn" class="modal-button secondary">Cancel</button>
+                <button id="addHeadingBtn" class="modal-button primary">Add Heading</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addListModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add List</h3>
+            <div class="modal-form-group">
+                <label for="listItems" class="modal-form-label">List Items (one per line)</label>
+                <textarea id="listItems" class="textarea-input" placeholder="Item 1&#10;Item 2&#10;Item 3"></textarea>
+            </div>
+            <div class="modal-form-group">
+                <label class="modal-form-label">List Type</label>
+                <div class="modal-radio-group">
+                    <label><input type="radio" name="listType" value="ul" checked> Unordered</label>
+                    <label><input type="radio" name="listType" value="ol"> Ordered</label>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddListBtn" class="modal-button secondary">Cancel</button>
+                <button id="addListBtn" class="modal-button primary">Add List</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addTableModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Table</h3>
+            <div class="modal-form-group">
+                <label for="tableContentInput" class="modal-form-label">Table Content (cells separated by ';', rows by newline)</label>
+                <textarea id="tableContentInput" class="textarea-input" placeholder="Header 1;Header 2;Header 3&#10;Row1Col1;Row1Col2;Row1Col3&#10;Row2Col1;Row2Col2;Row2Col3"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddTableBtn" class="modal-button secondary">Cancel</button>
+                <button id="addTableBtn" class="modal-button primary">Add Table</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addFormulaModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Numerical Formula (LaTeX)</h3>
+            <div class="modal-form-group">
+                <label for="formulaInput" class="modal-form-label">LaTeX Formula</label>
+                <textarea id="formulaInput" class="textarea-input" placeholder="E=mc^2"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddFormulaBtn" class="modal-button secondary">Cancel</button>
+                <button id="addFormulaBtn" class="modal-button primary">Add Formula</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addUrlModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add URL</h3>
+            <div class="modal-form-group">
+                <label for="urlLink" class="modal-form-label">URL</label>
+                <input type="url" id="urlLink" class="modal-input" placeholder="https://example.com">
+            </div>
+            <div class="modal-form-group">
+                <label for="urlText" class="modal-form-label">Display Text</label>
+                <input type="text" id="urlText" class="modal-input" placeholder="Click here">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddUrlBtn" class="modal-button secondary">Cancel</button>
+                <button id="addUrlBtn" class="modal-button primary">Add URL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addCodeModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Code Block</h3>
+            <div class="modal-form-group">
+                <label for="codeLanguage" class="modal-form-label">Language</label>
+                <input type="text" id="codeLanguage" class="modal-input" placeholder="javascript, python, html, css, etc.">
+            </div>
+            <div class="modal-form-group">
+                <label for="codeContent" class="modal-form-label">Code</label>
+                <textarea id="codeContent" class="textarea-input" placeholder="console.log('Hello World!');"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddCodeBtn" class="modal-button secondary">Cancel</button>
+                <button id="addCodeBtn" class="modal-button primary">Add Code</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addImageModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Image</h3>
+            <div class="modal-form-group">
+                <label for="imageUrl" class="modal-form-label">Image URL</label>
+                <input type="url" id="imageUrl" class="modal-input" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="modal-form-group">
+                <label for="imageAlt" class="modal-form-label">Alt Text</label>
+                <input type="text" id="imageAlt" class="modal-input" placeholder="Descriptive text for image">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddImageBtn" class="modal-button secondary">Cancel</button>
+                <button id="addImageBtn" class="modal-button primary">Add Image</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addPdfModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add PDF</h3>
+            <div class="modal-form-group">
+                <label for="pdfUrl" class="modal-form-label">PDF URL</label>
+                <input type="url" id="pdfUrl" class="modal-input" placeholder="https://example.com/document.pdf">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddPdfBtn" class="modal-button secondary">Cancel</button>
+                <button id="addPdfBtn" class="modal-button primary">Add PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addIframeModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Iframe</h3>
+            <div class="modal-form-group">
+                <label for="iframeUrl" class="modal-form-label">Iframe URL</label>
+                <input type="url" id="iframeUrl" class="modal-input" placeholder="https://example.com/embed">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddIframeBtn" class="modal-button secondary">Cancel</button>
+                <button id="addIframeBtn" class="modal-button primary">Add Iframe</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addVideoModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Video</h3>
+            <div class="modal-form-group">
+                <label for="videoUrl" class="modal-form-label">Video URL (YouTube/Vimeo embed)</label>
+                <input type="url" id="videoUrl" class="modal-input" placeholder="https://www.youtube.com/embed/videoid">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddVideoBtn" class="modal-button secondary">Cancel</button>
+                <button id="addVideoBtn" class="modal-button primary">Add Video</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addMapModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Map</h3>
+            <div class="modal-form-group">
+                <label for="mapUrl" class="modal-form-label">Map Embed URL (Google Maps iframe src)</label>
+                <input type="url" id="mapUrl" class="modal-input" placeholder="https://www.google.com/maps/embed?pb=...">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddMapBtn" class="modal-button secondary">Cancel</button>
+                <button id="addMapBtn" class="modal-button primary">Add Map</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addBoldModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Bold Text</h3>
+            <div class="modal-form-group">
+                <label for="boldText" class="modal-form-label">Text to make Bold</label>
+                <input type="text" id="boldText" class="modal-input" placeholder="Enter text">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddBoldBtn" class="modal-button secondary">Cancel</button>
+                <button id="addBoldBtn" class="modal-button primary">Add Bold</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addItalicsModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add Italic Text</h3>
+            <div class="modal-form-group">
+                <label for="italicsText" class="modal-form-label">Text to make Italic</label>
+                <input type="text" id="italicsText" class="modal-input" placeholder="Enter text">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddItalicsBtn" class="modal-button secondary">Cancel</button>
+                <button id="addItalicsBtn" class="modal-button primary">Add Italic</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Load URL HTML Modal -->
+    <div id="loadUrlHtmlModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Load HTML from URL</h3>
+            <div class="modal-form-group">
+                <label for="htmlUrlInput" class="modal-form-label">Website URL</label>
+                <input type="url" id="htmlUrlInput" class="modal-input" placeholder="https://example.com">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelLoadUrlHtmlBtn" class="modal-button secondary">Cancel</button>
+                <button id="confirmLoadUrlHtmlBtn" class="modal-button primary">Load HTML</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="messageBox" style="display: none;">
+        <span id="messageText"></span>
+        <button id="messageCloseBtn" class="message-close-btn"><i class="fas fa-times"></i></button>
+    </div>
+
+    <script src="script.js" type="text/javascript" charset="utf-8"></script>
+</body>
+</html>
