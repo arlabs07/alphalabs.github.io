@@ -1,6 +1,6 @@
 
         (function() {
-            let nameInput, logoUrlInput, faviconUrlInput, metaInput, ogTitleInput, ogDescriptionInput, ogImageUrlInput, twitterCardTypeSelect, hostingUrlInput, copyrightHolderInput, copyrightYearInput, contactEmailInput, facebookUrlInput, twitterUrlInput, linkedinUrlInput;
+            let nameInput, logoUrlInput, faviconUrlInput, metaInput, ogTitleInput, ogDescriptionInput, ogImageUrlInput, ogImageWidthInput, ogImageHeightInput, twitterCardTypeSelect, hostingUrlInput, copyrightHolderInput, copyrightYearInput, contactEmailInput, facebookUrlInput, twitterUrlInput, linkedinUrlInput, showScrollToTopRadios;
             let logoPreviewImg, pageList;
             let openAddPageModalBtn, addPageModalOverlay, modalNewPageNameInput, cancelAddPageBtn, confirmAddPageBtn;
             let editPageModalOverlay, modalEditPageNameInput, cancelEditPageBtn, saveEditPageBtn, currentEditingPageId = null;
@@ -86,6 +86,8 @@
             }
 
             function saveCurrentWebsiteToLibrary() {
+                const showScrollToTop = document.querySelector('input[name="showScrollToTop"]:checked')?.value === 'yes';
+
                 const currentWebsiteSettings = {
                     name: nameInput.value,
                     logoUrl: logoUrlInput.value,
@@ -94,6 +96,8 @@
                     ogTitle: ogTitleInput.value,
                     ogDescription: ogDescriptionInput.value,
                     ogImageUrl: ogImageUrlInput.value,
+                    ogImageWidth: ogImageWidthInput.value,
+                    ogImageHeight: ogImageHeightInput.value,
                     twitterCardType: twitterCardTypeSelect.value,
                     hostingUrl: hostingUrlInput.value,
                     copyrightHolder: copyrightHolderInput.value,
@@ -101,7 +105,8 @@
                     contactEmail: contactEmailInput.value,
                     facebookUrl: facebookUrlInput.value,
                     twitterUrl: twitterUrlInput.value,
-                    linkedinUrl: linkedinUrlInput.value
+                    linkedinUrl: linkedinUrlInput.value,
+                    showScrollToTop: showScrollToTop
                 };
 
                 const currentWebsiteData = {
@@ -136,6 +141,8 @@
                     ogTitleInput.value = website.settings.ogTitle || '';
                     ogDescriptionInput.value = website.settings.ogDescription || '';
                     ogImageUrlInput.value = website.settings.ogImageUrl || '';
+                    ogImageWidthInput.value = website.settings.ogImageWidth || '';
+                    ogImageHeightInput.value = website.settings.ogImageHeight || '';
                     twitterCardTypeSelect.value = website.settings.twitterCardType || 'summary';
                     hostingUrlInput.value = website.settings.hostingUrl || '';
                     copyrightHolderInput.value = website.settings.copyrightHolder || '';
@@ -144,6 +151,7 @@
                     facebookUrlInput.value = website.settings.facebookUrl || '';
                     twitterUrlInput.value = website.settings.twitterUrl || '';
                     linkedinUrlInput.value = website.settings.linkedinUrl || '';
+                    document.querySelector(`input[name="showScrollToTop"][value="${website.settings.showScrollToTop ? 'yes' : 'no'}"]`).checked = true;
 
                     pagesData = website.pages;
                     currentPreviewPageId = website.currentPreviewPageId;
@@ -187,6 +195,8 @@
                 ogTitleInput.value = '';
                 ogDescriptionInput.value = '';
                 ogImageUrlInput.value = '';
+                ogImageWidthInput.value = '';
+                ogImageHeightInput.value = '';
                 twitterCardTypeSelect.value = 'summary';
                 hostingUrlInput.value = '';
                 copyrightHolderInput.value = '';
@@ -195,6 +205,7 @@
                 facebookUrlInput.value = '';
                 twitterUrlInput.value = '';
                 linkedinUrlInput.value = '';
+                document.querySelector('input[name="showScrollToTop"][value="yes"]').checked = true;
                 pagesData = getDefaultPages();
                 currentPreviewPageId = pagesData[0].id;
                 renderPages();
@@ -540,13 +551,13 @@
                     case 'qa':
                         const q = qaQuestion.value.trim();
                         const a = qaAnswer.value.trim();
-                        if (q && a) contentHtml = `<div class="qa-block"><p><strong>Q:</strong> ${escapeHtml(q)}</p><p><strong>A:</strong> ${escapeHtml(a)}</p></div>`;
+                        if (q && a) contentHtml = `<div class="qa-block" data-qa-type="qa" data-question="${escapeHtml(q)}" data-answer="${escapeHtml(a)}"><p><strong>Q:</strong> ${escapeHtml(q)}</p><p><strong>A:</strong> ${escapeHtml(a)}</p></div>`;
                         else { showMessage("Question and Answer cannot be empty.", 'error'); return; }
                         break;
                     case 'true-false':
                         const statement = tfStatement.value.trim();
                         const tfAnswer = document.querySelector('input[name="tfAnswer"]:checked')?.value;
-                        if (statement && tfAnswer) contentHtml = `<div class="qa-block"><p><strong>Statement:</strong> ${escapeHtml(statement)}</p><p><strong>Answer:</strong> ${escapeHtml(tfAnswer)}</p></div>`;
+                        if (statement && tfAnswer) contentHtml = `<div class="qa-block" data-qa-type="true-false" data-statement="${escapeHtml(statement)}" data-answer="${escapeHtml(tfAnswer)}"><p><strong>Statement:</strong> ${escapeHtml(statement)}</p><p><strong>Answer:</strong> ${escapeHtml(tfAnswer)}</p></div>`;
                         else { showMessage("Statement and answer cannot be empty.", 'error'); return; }
                         break;
                     case 'fill-in-blanks':
@@ -554,7 +565,7 @@
                         const answers = fibAnswers.value.trim().split(',').map(s => s.trim()).filter(s => s !== '');
                         if (sentence && answers.length > 0) {
                             let formattedSentence = escapeHtml(sentence).replace(/\[BLANK\]/g, '<span style="text-decoration: underline; font-weight: bold;">[BLANK]</span>');
-                            contentHtml = `<div class="qa-block"><p>${formattedSentence}</p><p><strong>Answers:</strong> ${answers.map(a => escapeHtml(a)).join(', ')}</p></div>`;
+                            contentHtml = `<div class="qa-block" data-qa-type="fill-in-blanks" data-sentence="${escapeHtml(sentence)}" data-answers="${escapeHtml(JSON.stringify(answers))}"><p>${formattedSentence}</p><p><strong>Answers:</strong> ${answers.map(a => escapeHtml(a)).join(', ')}</p></div>`;
                         } else { showMessage("Sentence and answers cannot be empty.", 'error'); return; }
                         break;
                     case 'multiple-choice':
@@ -563,7 +574,7 @@
                         const mcCorrect = mcCorrectAnswer.value.trim();
                         if (mcQ && mcOpts.length > 0 && mcCorrect) {
                             let optionsHtml = mcOpts.map(opt => `<li>${escapeHtml(opt)}</li>`).join('');
-                            contentHtml = `<div class="qa-block"><p><strong>Q:</strong> ${escapeHtml(mcQ)}</p><ul>${optionsHtml}</ul><p><strong>Correct Answer:</strong> ${escapeHtml(mcCorrect)}</p></div>`;
+                            contentHtml = `<div class="qa-block" data-qa-type="multiple-choice" data-question="${escapeHtml(mcQ)}" data-options="${escapeHtml(JSON.stringify(mcOpts))}" data-answer="${escapeHtml(mcCorrect)}"><p><strong>Q:</strong> ${escapeHtml(mcQ)}</p><ul>${optionsHtml}</ul><p><strong>Correct Answer:</strong> ${escapeHtml(mcCorrect)}</p></div>`;
                         } else { showMessage("Question, options, and correct answer cannot be empty.", 'error'); return; }
                         break;
                 }
@@ -598,6 +609,44 @@
                 tempDiv.querySelectorAll('iframe').forEach(iframe => { if (iframe.src) urls.add({ url: iframe.src, type: 'Iframe/Embed' }); });
                 tempDiv.querySelectorAll('a').forEach(a => { if (a.href) urls.add({ url: a.href, type: 'Link' }); });
                 return Array.from(urls);
+            }
+
+            function generateKeywordsFromContent() {
+                const allText = pagesData.map(page => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = page.content;
+                    return tempDiv.textContent || '';
+                }).join(' ').toLowerCase();
+
+                const words = allText.match(/\b\w+\b/g) || [];
+                const stopWords = new Set(["a", "an", "the", "and", "but", "or", "for", "nor", "on", "at", "to", "from", "by", "of", "in", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "shall", "should", "can", "could", "may", "might", "must", "it", "its", "he", "she", "they", "we", "you", "your", "my", "our", "their", "this", "that", "these", "those", "here", "there", "when", "where", "why", "how", "what", "which", "who", "whom", "whose", "if", "then", "than", "as", "so", "such", "too", "very", "just", "don", "should", "now"]);
+
+                const wordFrequencies = {};
+                words.forEach(word => {
+                    if (word.length > 2 && !stopWords.has(word)) {
+                        wordFrequencies[word] = (wordFrequencies[word] || 0) + 1;
+                    }
+                });
+
+                const sortedWords = Object.keys(wordFrequencies).sort((a, b) => wordFrequencies[b] - wordFrequencies[a]);
+                return sortedWords.slice(0, 15).join(', ');
+            }
+
+            function generateAutoDescription() {
+                if (metaInput.value.trim() !== '') return metaInput.value.trim();
+
+                for (const page of pagesData) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = page.content;
+                    const paragraphs = tempDiv.querySelectorAll('p');
+                    for (const p of paragraphs) {
+                        const text = p.textContent.trim();
+                        if (text.length > 50) { // Look for a reasonably long paragraph
+                            return text.substring(0, 160) + (text.length > 160 ? '...' : '');
+                        }
+                    }
+                }
+                return `Welcome to ${nameInput.value || 'My ARvia Website'}. Explore our pages to learn more.`;
             }
 
             function generateWebsiteInfoPage() {
@@ -783,12 +832,22 @@
                 const websiteName = nameInput.value.trim();
                 const logoUrl = logoUrlInput.value.trim();
                 const faviconUrl = faviconUrlInput.value.trim();
-                const metaDescription = metaInput.value.trim();
+                const metaDescription = generateAutoDescription(); // Use auto-generated if empty
                 const ogTitle = ogTitleInput.value.trim();
                 const ogDescription = ogDescriptionInput.value.trim();
                 const ogImageUrl = ogImageUrlInput.value.trim();
+                const ogImageWidth = ogImageWidthInput.value.trim();
+                const ogImageHeight = ogImageHeightInput.value.trim();
                 const twitterCardType = twitterCardTypeSelect.value.trim();
                 const hostingUrl = hostingUrlInput.value.trim();
+                const copyrightHolder = copyrightHolderInput.value.trim();
+                const copyrightYear = copyrightYearInput.value.trim();
+                const contactEmail = contactEmailInput.value.trim();
+                const facebookUrl = facebookUrlInput.value.trim();
+                const twitterUrl = twitterUrlInput.value.trim();
+                const linkedinUrl = linkedinUrlInput.value.trim();
+                const showScrollToTop = document.querySelector('input[name="showScrollToTop"]:checked')?.value === 'yes';
+
                 const siteTitle = websiteName || 'My ARvia Website';
                 const currentPage = pagesData.find(p => p.id === currentPreviewPageId);
                 const pageContent = currentPage ? currentPage.content : '<h1>Welcome!</h1><p>No page selected or content available.</p>';
@@ -802,9 +861,44 @@
                 const prevButtonHtml = `<button id="prevPageBtnIframe" class="pagination-button-iframe" ${prevPageIndex < 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
                 const nextButtonHtml = `<button id="nextPageBtnIframe" class="pagination-button-iframe" ${nextPageIndex >= pagesData.length ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
 
+                let qaSchema = [];
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = pageContent;
+                tempDiv.querySelectorAll('.qa-block').forEach(qaBlock => {
+                    const qaType = qaBlock.dataset.qaType;
+                    let question = '';
+                    let answer = '';
+                    if (qaType === 'qa') {
+                        question = qaBlock.dataset.question;
+                        answer = qaBlock.dataset.answer;
+                    } else if (qaType === 'true-false') {
+                        question = qaBlock.dataset.statement;
+                        answer = qaBlock.dataset.answer;
+                    } else if (qaType === 'fill-in-blanks') {
+                        question = qaBlock.dataset.sentence;
+                        answer = JSON.parse(qaBlock.dataset.answers || '[]').join(', ');
+                    } else if (qaType === 'multiple-choice') {
+                        question = qaBlock.dataset.question;
+                        answer = qaBlock.dataset.answer;
+                    }
+                    if (question && answer) {
+                        qaSchema.push({
+                            "@type": "Question",
+                            "name": question,
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": answer
+                            }
+                        });
+                    }
+                });
+
+                const jsonLdSchema = qaSchema.length > 0 ? `<script type="application/ld+json">{"@context": "https://schema.org","@type": "FAQPage","mainEntity": ${JSON.stringify(qaSchema)}}</script>` : '';
+                const keywords = generateKeywordsFromContent();
+
                 const cssStyles = `
                     * {box-sizing: border-box;}
-                    html, body {width: 100%; height: 100%; overflow-x: hidden;}
+                    html, body {width: 100%; height: 100%; overflow-x: hidden; scroll-behavior: smooth;}
                     body {font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #1a1a1a; color: #FFFFFF; display: flex; flex-direction: column; min-height: 100vh;}
                     .preview-header-iframe {background-color: #0a0a0a; color: #FFFFFF; padding: 0.9375rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
                     .logo-section-iframe {display: flex; align-items: center;}
@@ -829,7 +923,8 @@
                     .main-content-iframe table {width: 100%; border-collapse: collapse; margin-bottom: 0.9375rem; overflow-x: auto; display: block; border-radius: 0.3125rem;}
                     .main-content-iframe th, .main-content-iframe td {border: 1px solid #555555; padding: 0.5rem; text-align: left;}
                     .main-content-iframe th {background-color: #2a2a2a; color: #BB86FC;}
-                    .main-content-iframe ul, .main-content-iframe ol {margin-left: 1.25rem; margin-bottom: 0.625rem;}
+                    .main-content-iframe ul {list-style: disc; margin-left: 1.25rem; padding-left: 0; margin-bottom: 0.625rem;}
+                    .main-content-iframe ol {list-style: decimal; margin-left: 1.25rem; padding-left: 0; margin-bottom: 0.625rem;}
                     .main-content-iframe li {margin-bottom: 0.3125rem;}
                     .main-content-iframe iframe {width: 100%; height: 25rem; border: none; border-radius: 0.3125rem;}
                     .formula-block-iframe {overflow-x: auto; padding: 0.9375rem; background-color: #0a0a0a; border: 1px solid #BB86FC; border-radius: 0.3125rem; margin-bottom: 0.9375rem; white-space: nowrap;}
@@ -843,7 +938,9 @@
                     .mobile-sidebar-overlay-iframe.show .mobile-sidebar-iframe {transform: translateX(0);}
                     .mobile-sidebar-iframe .sidebar-title {display: none;}
                     .mobile-sidebar-iframe .sidebar-page-item {padding: 0.625rem 1.25rem;}
-                    .mobile-sidebar-iframe .sidebar-logo-section-iframe {display: none;}
+                    .mobile-sidebar-iframe .sidebar-logo-section-iframe {display: flex; align-items: center; padding: 0.625rem 1.25rem; border-bottom: 1px solid #333; margin-bottom: 1rem;}
+                    .scroll-to-top-btn-iframe {position: fixed; bottom: 1.5rem; right: 1.5rem; background-color: #BB86FC; color: #000000; width: 3rem; height: 3rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3); opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;}
+                    .scroll-to-top-btn-iframe.show {opacity: 1; visibility: visible;}
                     .qa-block {background-color: #0a0a0a; border: 1px solid #BB86FC; border-radius: 0.3125rem; padding: 0.9375rem; margin-bottom: 0.9375rem;}
                     .qa-block p {margin-bottom: 0.5rem;}
                     .qa-block ul {list-style: disc; margin-left: 1.25rem; margin-top: 0.5rem;}
@@ -873,7 +970,7 @@
                     }
                 `;
 
-                return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(siteTitle)}</title>${metaDescription ? `<meta name="description" content="${escapeHtml(metaDescription)}">` : ''}${faviconUrl ? `<link rel="icon" href="${escapeHtml(faviconUrl)}" type="image/x-icon">` : ''}<meta property="og:title" content="${escapeHtml(ogTitle)}"><meta property="og:description" content="${escapeHtml(ogDescription)}"><meta property="og:image" content="${escapeHtml(ogImageUrl)}"><meta property="og:url" content="${escapeHtml(hostingUrl || window.location.href)}"><meta property="og:type" content="website">${twitterCardType ? `<meta name="twitter:card" content="${escapeHtml(twitterCardType)}">` : ''}${ogTitle ? `<meta name="twitter:title" content="${escapeHtml(ogTitle)}">` : ''}${ogDescription ? `<meta name="twitter:description" content="${escapeHtml(ogDescription)}">` : ''}${ogImageUrl ? `<meta name="twitter:image" content="${escapeHtml(ogImageUrl)}">` : ''}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdn.tailwindcss.com"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script><script>MathJax = {tex: {inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']]}, svg: {fontCache: 'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script><style>${cssStyles}</style></head><body><header class="preview-header-iframe"><div class="logo-section-iframe"><img src="${escapeHtml(logoUrl || "https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg")}" alt="ARvia Logo" class="arvia-logo-iframe"><span class="arvia-text-iframe">${escapeHtml(siteTitle)}</span></div><span id="menuButtonIframe" class="menu-button-iframe" aria-label="Open Mobile Menu"><i class="fas fa-bars"></i></span></header><div class="preview-content-area-iframe"><div id="previewFixedSidebarIframe" class="preview-sidebar-iframe"><div id="previewSidebarPageListIframe">${sidebarHtml}</div></div><div class="main-content-iframe"><div class="content-wrapper-iframe"><div id="actualPageContentIframe" class="actual-page-content-iframe">${pageContent}</div></div><div id="previewPaginationIframe" class="preview-pagination-iframe">${prevButtonHtml}${nextButtonHtml}</div></div></div><div id="mobileSidebarOverlayIframe" class="mobile-sidebar-overlay-iframe"><div id="mobileSidebarIframe" class="mobile-sidebar-iframe"><div id="mobileSidebarPageListIframe">${sidebarHtml}</div></div></div><script>const pagesDataIframe = ${JSON.stringify(pagesData)};let currentPageIdIframe = '${currentPreviewPageId}';const previewSidebarPageListIframe = document.getElementById('previewSidebarPageListIframe');const mobileSidebarPageListIframe = document.getElementById('mobileSidebarPageListIframe');const actualPageContentIframe = document.getElementById('actualPageContentIframe');const menuButtonIframe = document.getElementById('menuButtonIframe');const mobileSidebarOverlayIframe = document.getElementById('mobileSidebarOverlayIframe');const prevPageBtnIframe = document.getElementById('prevPageBtnIframe');const nextPageBtnIframe = document.getElementById('nextPageBtnIframe');function animatePageContent() {if (!actualPageContentIframe) return;actualPageContentIframe.querySelectorAll('h1, h2, h3, p, ul, ol, table, pre, img, iframe, .formula-block-iframe, strong, em, a, .qa-block').forEach(el => {el.style.opacity = '0';el.style.transform = 'translateY(20px)';});anime({targets: '#actualPageContentIframe h1, #actualPageContentIframe h2, #actualPageContentIframe h3, #actualPageContentIframe p, #actualPageContentIframe ul, #actualPageContentIframe ol, #actualPageContentIframe table, #actualPageContentIframe pre, #actualPageContentIframe img, #actualPageContentIframe iframe, #actualPageContentIframe .formula-block-iframe, #actualPageContentIframe strong, #actualPageContentIframe em, #actualPageContentIframe a, #actualPageContentIframe .qa-block',opacity: [0, 1],translateY: [20, 0],delay: anime.stagger(50, {start: 300}),easing: 'easeOutQuad'});}function displayPageContentIframe(pageId) {const page = pagesDataIframe.find(p => p.id === pageId);if (page && actualPageContentIframe) {actualPageContentIframe.innerHTML = page.content;currentPageIdIframe = pageId;document.querySelectorAll('.sidebar-page-item-iframe').forEach(item => {if (item.dataset.id === pageId) {item.classList.add('active');} else {item.classList.remove('active');}});if (typeof MathJax !== 'undefined') {MathJax.typesetPromise([actualPageContentIframe]).then(() => {animatePageContent();}).catch(err => console.error("MathJax typesetting error:", err));} else {animatePageContent();}actualPageContentIframe.querySelectorAll('pre code').forEach((block) => {if (typeof hljs !== 'undefined') {hljs.highlightElement(block);}const copyButton = document.createElement('button');copyButton.className = 'copy-code-btn-iframe';copyButton.textContent = 'Copy';copyButton.onclick = () => {try {const codeText = block.textContent;const tempInput = document.createElement('textarea');tempInput.value = codeText;document.body.appendChild(tempInput);tempInput.select();document.execCommand('copy');document.body.removeChild(tempInput);copyButton.textContent = 'Copied!';setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);} catch (err) {console.error("Failed to copy code in iframe:", err);}};if (!block.parentNode.querySelector('.copy-code-btn-iframe')) {block.parentNode.style.position = 'relative';block.parentNode.appendChild(copyButton);}});}}function updatePaginationButtonsIframe() {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (prevPageBtnIframe) prevPageBtnIframe.disabled = currentIndex <= 0;if (nextPageBtnIframe) nextPageBtnIframe.disabled = currentIndex >= pagesDataIframe.length - 1;}if (previewSidebarPageListIframe) {previewSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {displayPageContentIframe(target.dataset.id);}});}if (mobileSidebarPageListIframe) {mobileSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {displayPageContentIframe(target.dataset.id);mobileSidebarOverlayIframe.classList.remove('show');}});}if (menuButtonIframe) {menuButtonIframe.addEventListener('click', () => {mobileSidebarOverlayIframe.classList.add('show');});}if (mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.addEventListener('click', (event) => {if (event.target === mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.classList.remove('show');}});}if (prevPageBtnIframe) {prevPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex > 0) {displayPageContentIframe(pagesDataIframe[currentIndex - 1].id);}});}if (nextPageBtnIframe) {nextPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex < pagesDataIframe.length - 1) {displayPageContentIframe(pagesDataIframe[currentIndex + 1].id);}});}document.addEventListener('DOMContentLoaded', () => {if (currentPageIdIframe) {displayPageContentIframe(currentPageIdIframe);}});</script></body></html>`;
+                return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(siteTitle)}</title>${metaDescription ? `<meta name="description" content="${escapeHtml(metaDescription)}">` : ''}<meta name="keywords" content="${escapeHtml(keywords)}"><meta name="author" content="${escapeHtml(copyrightHolder || 'ARvia')}"><meta name="generator" content="ARvia Website Generator"><meta name="theme-color" content="#BB86FC"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">${faviconUrl ? `<link rel="icon" href="${escapeHtml(faviconUrl)}" type="image/x-icon">` : ''}<meta property="og:title" content="${escapeHtml(ogTitle || siteTitle)}"><meta property="og:description" content="${escapeHtml(ogDescription || metaDescription)}">${ogImageUrl ? `<meta property="og:image" content="${escapeHtml(ogImageUrl)}">` : ''}${ogImageWidth ? `<meta property="og:image:width" content="${escapeHtml(ogImageWidth)}">` : ''}${ogImageHeight ? `<meta property="og:image:height" content="${escapeHtml(ogImageHeight)}">` : ''}<meta property="og:url" content="${escapeHtml(hostingUrl || window.location.href)}"><meta property="og:type" content="website"><meta name="twitter:card" content="${escapeHtml(twitterCardType)}">${ogTitle ? `<meta name="twitter:title" content="${escapeHtml(ogTitle)}">` : ''}${ogDescription ? `<meta name="twitter:description" content="${escapeHtml(ogDescription)}">` : ''}${ogImageUrl ? `<meta name="twitter:image" content="${escapeHtml(ogImageUrl)}">` : ''}<meta name="arvia-website-name" content="${escapeHtml(websiteName)}"><meta name="arvia-logo-url" content="${escapeHtml(logoUrl)}"><meta name="arvia-favicon-url" content="${escapeHtml(faviconUrl)}"><meta name="arvia-hosting-url" content="${escapeHtml(hostingUrl)}"><meta name="arvia-copyright-holder" content="${escapeHtml(copyrightHolder)}"><meta name="arvia-copyright-year" content="${escapeHtml(copyrightYear)}"><meta name="arvia-contact-email" content="${escapeHtml(contactEmail)}"><meta name="arvia-facebook-url" content="${escapeHtml(facebookUrl)}"><meta name="arvia-twitter-url" content="${escapeHtml(twitterUrl)}"><meta name="arvia-linkedin-url" content="${escapeHtml(linkedinUrl)}"><meta name="arvia-show-scroll-to-top" content="${showScrollToTop ? 'yes' : 'no'}">${jsonLdSchema}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdn.tailwindcss.com"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script><script>MathJax = {tex: {inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']]}, svg: {fontCache: 'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script><style>${cssStyles}</style></head><body><header class="preview-header-iframe"><div class="logo-section-iframe"><img src="${escapeHtml(logoUrl || "https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg")}" alt="ARvia Logo" class="arvia-logo-iframe"><span class="arvia-text-iframe">${escapeHtml(siteTitle)}</span></div><span id="menuButtonIframe" class="menu-button-iframe" aria-label="Open Mobile Menu"><i class="fas fa-bars"></i></span></header><div class="preview-content-area-iframe"><div id="previewFixedSidebarIframe" class="preview-sidebar-iframe"><div id="previewSidebarPageListIframe">${sidebarHtml}</div></div><div class="main-content-iframe"><div class="content-wrapper-iframe"><div id="actualPageContentIframe" class="actual-page-content-iframe">${pageContent}</div></div><div id="previewPaginationIframe" class="preview-pagination-iframe">${prevButtonHtml}${nextButtonHtml}</div></div></div><div id="mobileSidebarOverlayIframe" class="mobile-sidebar-overlay-iframe"><div id="mobileSidebarIframe" class="mobile-sidebar-iframe"><div class="sidebar-logo-section-iframe"><img src="${escapeHtml(logoUrl || "https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg")}" alt="ARvia Logo" class="arvia-logo-iframe"><span class="arvia-text-iframe" style="font-size: 1.5rem;">${escapeHtml(siteTitle)}</span></div><div id="mobileSidebarPageListIframe">${sidebarHtml}</div></div></div>${showScrollToTop ? `<button id="scrollToTopBtnIframe" class="scroll-to-top-btn-iframe" aria-label="Scroll to top"><i class="fas fa-arrow-circle-up"></i></button>` : ''}<script>const pagesDataIframe = ${JSON.stringify(pagesData)};let currentPageIdIframe = '${currentPreviewPageId}';const previewSidebarPageListIframe = document.getElementById('previewSidebarPageListIframe');const mobileSidebarPageListIframe = document.getElementById('mobileSidebarPageListIframe');const actualPageContentIframe = document.getElementById('actualPageContentIframe');const menuButtonIframe = document.getElementById('menuButtonIframe');const mobileSidebarOverlayIframe = document.getElementById('mobileSidebarOverlayIframe');const prevPageBtnIframe = document.getElementById('prevPageBtnIframe');const nextPageBtnIframe = document.getElementById('nextPageBtnIframe');const scrollToTopBtnIframe = document.getElementById('scrollToTopBtnIframe');const mainContentIframe = document.querySelector('.main-content-iframe');function animatePageContent() {if (!actualPageContentIframe) return;actualPageContentIframe.querySelectorAll('h1, h2, h3, p, ul, ol, table, pre, img, iframe, .formula-block-iframe, strong, em, a, .qa-block').forEach(el => {el.style.opacity = '0';el.style.transform = 'translateY(20px)';});anime({targets: '#actualPageContentIframe h1, #actualPageContentIframe h2, #actualPageContentIframe h3, #actualPageContentIframe p, #actualPageContentIframe ul, #actualPageContentIframe ol, #actualPageContentIframe table, #actualPageContentIframe pre, #actualPageContentIframe img, #actualPageContentIframe iframe, #actualPageContentIframe .formula-block-iframe, #actualPageContentIframe strong, #actualPageContentIframe em, #actualPageContentIframe a, #actualPageContentIframe .qa-block',opacity: [0, 1],translateY: [20, 0],delay: anime.stagger(50, {start: 300}),easing: 'easeOutQuad'});}function displayPageContentIframe(pageId) {const page = pagesDataIframe.find(p => p.id === pageId);if (page && actualPageContentIframe) {actualPageContentIframe.innerHTML = page.content;currentPageIdIframe = pageId;document.querySelectorAll('.sidebar-page-item-iframe').forEach(item => {if (item.dataset.id === pageId) {item.classList.add('active');} else {item.classList.remove('active');}});initializeIframeScripts();}}function updatePaginationButtonsIframe() {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (prevPageBtnIframe) prevPageBtnIframe.disabled = currentIndex <= 0;if (nextPageBtnIframe) nextPageBtnIframe.disabled = currentIndex >= pagesDataIframe.length - 1;}function initializeIframeScripts() {if (typeof MathJax !== 'undefined') {MathJax.typesetPromise([actualPageContentIframe]).then(() => {animatePageContent();}).catch(err => console.error("MathJax typesetting error:", err));} else {animatePageContent();}actualPageContentIframe.querySelectorAll('pre code').forEach((block) => {if (typeof hljs !== 'undefined') {hljs.highlightElement(block);}const copyButton = document.createElement('button');copyButton.className = 'copy-code-btn-iframe';copyButton.textContent = 'Copy';copyButton.onclick = () => {try {const codeText = block.textContent;const tempInput = document.createElement('textarea');tempInput.value = codeText;document.body.appendChild(tempInput);tempInput.select();document.execCommand('copy');document.body.removeChild(tempInput);copyButton.textContent = 'Copied!';setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);} catch (err) {console.error("Failed to copy code in iframe:", err);}};if (!block.parentNode.querySelector('.copy-code-btn-iframe')) {block.parentNode.style.position = 'relative';block.parentNode.appendChild(copyButton);}});updatePaginationButtonsIframe();}if (previewSidebarPageListIframe) {previewSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {displayPageContentIframe(target.dataset.id);}});}if (mobileSidebarPageListIframe) {mobileSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {displayPageContentIframe(target.dataset.id);mobileSidebarOverlayIframe.classList.remove('show');}});}if (menuButtonIframe) {menuButtonIframe.addEventListener('click', () => {mobileSidebarOverlayIframe.classList.add('show');});}if (mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.addEventListener('click', (event) => {if (event.target === mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.classList.remove('show');}});}if (prevPageBtnIframe) {prevPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex > 0) {displayPageContentIframe(pagesDataIframe[currentIndex - 1].id);}});}if (nextPageBtnIframe) {nextPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex < pagesDataIframe.length - 1) {displayPageContentIframe(pagesDataIframe[currentIndex + 1].id);}});}if (scrollToTopBtnIframe && mainContentIframe) {mainContentIframe.addEventListener('scroll', () => {if (mainContentIframe.scrollTop > (mainContentIframe.clientHeight * 0.5)) {scrollToTopBtnIframe.classList.add('show');} else {scrollToTopBtnIframe.classList.remove('show');}});scrollToTopBtnIframe.addEventListener('click', () => {mainContentIframe.scrollTo({top: 0, behavior: 'smooth'});scrollToTopBtnIframe.classList.remove('show');});}document.addEventListener('DOMContentLoaded', () => {if (currentPageIdIframe) {displayPageContentIframe(currentPageIdIframe);}});</script></body></html>`;
             }
 
             function updateIframeContent() {
@@ -961,12 +1058,29 @@
                         }
                         return;
                     }
-                    if (nameInput) nameInput.value = doc.querySelector('title')?.textContent || '';
+                    if (nameInput) nameInput.value = doc.querySelector('meta[name="arvia-website-name"]')?.getAttribute('content') || doc.querySelector('title')?.textContent || '';
+                    if (logoUrlInput) logoUrlInput.value = doc.querySelector('meta[name="arvia-logo-url"]')?.getAttribute('content') || '';
+                    if (faviconUrlInput) faviconUrlInput.value = doc.querySelector('meta[name="arvia-favicon-url"]')?.getAttribute('content') || '';
                     if (metaInput) metaInput.value = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
                     if (ogTitleInput) ogTitleInput.value = doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
                     if (ogDescriptionInput) ogDescriptionInput.value = doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
                     if (ogImageUrlInput) ogImageUrlInput.value = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || '';
+                    if (ogImageWidthInput) ogImageWidthInput.value = doc.querySelector('meta[property="og:image:width"]')?.getAttribute('content') || '';
+                    if (ogImageHeightInput) ogImageHeightInput.value = doc.querySelector('meta[property="og:image:height"]')?.getAttribute('content') || '';
                     if (twitterCardTypeSelect) twitterCardTypeSelect.value = doc.querySelector('meta[name="twitter:card"]')?.getAttribute('content') || 'summary';
+                    if (hostingUrlInput) hostingUrlInput.value = doc.querySelector('meta[name="arvia-hosting-url"]')?.getAttribute('content') || '';
+                    if (copyrightHolderInput) copyrightHolderInput.value = doc.querySelector('meta[name="arvia-copyright-holder"]')?.getAttribute('content') || '';
+                    if (copyrightYearInput) copyrightYearInput.value = doc.querySelector('meta[name="arvia-copyright-year"]')?.getAttribute('content') || new Date().getFullYear();
+                    if (contactEmailInput) contactEmailInput.value = doc.querySelector('meta[name="arvia-contact-email"]')?.getAttribute('content') || '';
+                    if (facebookUrlInput) facebookUrlInput.value = doc.querySelector('meta[name="arvia-facebook-url"]')?.getAttribute('content') || '';
+                    if (twitterUrlInput) twitterUrlInput.value = doc.querySelector('meta[name="arvia-twitter-url"]')?.getAttribute('content') || '';
+                    if (linkedinUrlInput) linkedinUrlInput.value = doc.querySelector('meta[name="arvia-linkedin-url"]')?.getAttribute('content') || '';
+                    
+                    const showScrollToTopMeta = doc.querySelector('meta[name="arvia-show-scroll-to-top"]')?.getAttribute('content');
+                    if (showScrollToTopMeta) {
+                        document.querySelector(`input[name="showScrollToTop"][value="${showScrollToTopMeta}"]`).checked = true;
+                    }
+
                     const actualPageContentDiv = doc.getElementById('actualPageContentIframe');
                     if (actualPageContentDiv && currentPageIdInEditor) {
                         const page = pagesData.find(p => p.id === currentPageIdInEditor);
@@ -1024,7 +1138,6 @@
                             const errorJson = JSON.parse(errorText);
                             errorText = errorJson.message || errorText;
                         } catch (e) {
-                            // Not JSON, use raw text
                         }
                         throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorText}`);
                     }
@@ -1076,6 +1189,8 @@
                 ogTitleInput = document.getElementById('og-title');
                 ogDescriptionInput = document.getElementById('og-description');
                 ogImageUrlInput = document.getElementById('og-image-url');
+                ogImageWidthInput = document.getElementById('og-image-width');
+                ogImageHeightInput = document.getElementById('og-image-height');
                 twitterCardTypeSelect = document.getElementById('twitter-card-type');
                 hostingUrlInput = document.getElementById('hosting-url');
                 copyrightHolderInput = document.getElementById('copyright-holder');
@@ -1084,6 +1199,7 @@
                 facebookUrlInput = document.getElementById('facebook-url');
                 twitterUrlInput = document.getElementById('twitter-url');
                 linkedinUrlInput = document.getElementById('linkedin-url');
+                showScrollToTopRadios = document.querySelectorAll('input[name="showScrollToTop"]');
                 logoPreviewImg = document.getElementById('logoPreview');
                 pageList = document.getElementById('pageList');
                 openAddPageModalBtn = document.getElementById('openAddPageModal');
@@ -1264,6 +1380,8 @@
                 if (ogTitleInput) ogTitleInput.addEventListener('input', saveCurrentWebsiteToLibrary);
                 if (ogDescriptionInput) ogDescriptionInput.addEventListener('input', saveCurrentWebsiteToLibrary);
                 if (ogImageUrlInput) ogImageUrlInput.addEventListener('input', saveCurrentWebsiteToLibrary);
+                if (ogImageWidthInput) ogImageWidthInput.addEventListener('input', saveCurrentWebsiteToLibrary);
+                if (ogImageHeightInput) ogImageHeightInput.addEventListener('input', saveCurrentWebsiteToLibrary);
                 if (twitterCardTypeSelect) twitterCardTypeSelect.addEventListener('change', saveCurrentWebsiteToLibrary);
                 if (hostingUrlInput) hostingUrlInput.addEventListener('input', saveCurrentWebsiteToLibrary);
                 if (copyrightHolderInput) copyrightHolderInput.addEventListener('input', saveCurrentWebsiteToLibrary);
@@ -1272,6 +1390,7 @@
                 if (facebookUrlInput) facebookUrlInput.addEventListener('input', saveCurrentWebsiteToLibrary);
                 if (twitterUrlInput) twitterUrlInput.addEventListener('input', saveCurrentWebsiteToLibrary);
                 if (linkedinUrlInput) linkedinUrlInput.addEventListener('input', saveCurrentWebsiteToLibrary);
+                showScrollToTopRadios.forEach(radio => radio.addEventListener('change', saveCurrentWebsiteToLibrary));
                 if (pageList) {
                     pageList.addEventListener('click', (event) => {
                         const target = event.target.closest('.action-icon, .page-item');
@@ -1280,7 +1399,7 @@
                         if (target.classList.contains('action-icon')) {
                             const action = target.dataset.action;
                             const id = target.dataset.id;
-                            if (action === 'edit') openEditPageModal(id);
+                            if (action === 'edit') openPageModal(id);
                             else if (action === 'delete') openConfirmDeleteModal(id);
                             else if (action === 'move-up') movePage(id, 'up');
                             else if (action === 'move-down') movePage(id, 'down');
