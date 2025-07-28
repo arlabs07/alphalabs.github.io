@@ -978,8 +978,8 @@
                 
                 // Pagination logic
                 const currentPageIndex = pagesData.findIndex(p => p.id === initialPageId);
-                const prevButtonHtml = `<button id="prevPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex <= 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> Previous</button>`;
-                const nextButtonHtml = `<button id="nextPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex >= pagesData.length - 1 ? 'disabled' : ''}>Next <i class="fas fa-chevron-right"></i></button>`;
+                const prevButtonHtml = `<button id="prevPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex <= 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> </button>`;
+                const nextButtonHtml = `<button id="nextPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex >= pagesData.length - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
 
                 let qaSchema = [];
                 const tempDiv = document.createElement('div');
