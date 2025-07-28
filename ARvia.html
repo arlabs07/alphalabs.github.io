@@ -47,19 +47,20 @@
         .logo-preview-wrapper {width: 3.125rem; height: 3.125rem; border: 1px solid #FFFFFF; background-color: #0a0a0a; display: flex; justify-content: center; align-items: center; overflow: hidden; border-radius: 0.3125rem; flex-shrink: 0;}
         .logo-preview-img {max-width: 100%; max-height: 100%; object-fit: contain; display: block;}
         .no-image-svg {width: 100%; height: 100%; display: block; color: #888;}
-        .pages-section {margin-top: 1.875rem; border: 1px solid #FFFFFF; border-radius: 0.3125rem; flex-shrink: 0; width: 100%;}
-        .pages-header {display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background-color: #0a0a0a; border-bottom: 1px solid #333333; font-weight: bold; font-size: 1.3rem; color: #FFFFFF;}
-        .add-page-icon {font-size: 1.2rem; color: #BB86FC; cursor: pointer; transition: transform 0.3s ease;}
-        .add-page-icon:hover {transform: scale(1.1);}
-        .page-list {background-color: #1a1a1a; max-height: 18.75rem; overflow-y: auto;}
-        .page-item {display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; border-bottom: 1px solid #333333; color: #FFFFFF; cursor: pointer; transition: background-color 0.3s ease;}
-        .page-item:hover {background-color: #2a2a2a;}
-        .page-item:last-child {border-bottom: none;}
-        .page-name {font-size: 1.1rem; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 100px);}
-        .page-actions {display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;}
+        .pages-section, .external-links-section {margin-top: 1.875rem; border: 1px solid #FFFFFF; border-radius: 0.3125rem; flex-shrink: 0; width: 100%;}
+        .pages-header, .external-links-header {display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; background-color: #0a0a0a; border-bottom: 1px solid #333333; font-weight: bold; font-size: 1.3rem; color: #FFFFFF;}
+        .add-page-icon, .add-link-icon {font-size: 1.2rem; color: #BB86FC; cursor: pointer; transition: transform 0.3s ease;}
+        .add-page-icon:hover, .add-link-icon:hover {transform: scale(1.1);}
+        .page-list, .external-link-list {background-color: #1a1a1a; max-height: 18.75rem; overflow-y: auto;}
+        .page-item, .external-link-item {display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; border-bottom: 1px solid #333333; color: #FFFFFF; cursor: pointer; transition: background-color 0.3s ease;}
+        .page-item:hover, .external-link-item:hover {background-color: #2a2a2a;}
+        .page-item:last-child, .external-link-item:last-child {border-bottom: none;}
+        .page-name, .external-link-name {font-size: 1.1rem; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 100px);}
+        .page-actions, .external-link-actions {display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;}
         .action-icon {cursor: pointer; font-size: 1.1rem; color: #FFFFFF; transition: color 0.3s ease, transform 0.3s ease;}
         .action-icon:hover {color: #BB86FC; transform: scale(1.1);}
         .sort-icon {font-size: 0.9rem;}
+        .default-page-radio {accent-color: #BB86FC; margin-right: 0.5rem;}
         .modal-overlay {position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;}
         .modal-overlay.show {opacity: 1; visibility: visible;}
         .modal-content {background-color: #1a1a1a; padding: 1.875rem; border-radius: 0.625rem; box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.3); width: 90%; max-width: 25rem; transform: translateY(-1.25rem); transition: transform 0.3s ease;}
@@ -324,10 +325,19 @@
             </div>
             <div class="pages-section">
                 <div class="pages-header">
-                    <span>PAGE #</span>
+                    <span>PAGES</span>
                     <span class="add-page-icon" id="openAddPageModal" aria-label="Add New Page"><i class="fas fa-plus"></i></span>
                 </div>
                 <div id="pageList" class="page-list">
+                </div>
+            </div>
+
+            <div class="external-links-section">
+                <div class="external-links-header">
+                    <span>EXTERNAL REDIRECTS</span>
+                    <span class="add-link-icon" id="openAddExternalLinkModal" aria-label="Add New External Link"><i class="fas fa-plus"></i></span>
+                </div>
+                <div id="externalLinkList" class="external-link-list">
                 </div>
             </div>
         </main>
@@ -758,6 +768,35 @@
             <div class="modal-buttons">
                 <button id="cancelAddQaBtn" class="modal-button secondary">Cancel</button>
                 <button id="addQaBtn" class="modal-button primary">Add Question</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addExternalLinkModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Add External Link</h3>
+            <div class="modal-form-group">
+                <label for="externalLinkDisplayText" class="modal-form-label">Display Text</label>
+                <input type="text" id="externalLinkDisplayText" class="modal-input" placeholder="e.g., Our Blog">
+            </div>
+            <div class="modal-form-group">
+                <label for="externalLinkUrl" class="modal-form-label">URL</label>
+                <input type="url" id="externalLinkUrl" class="modal-input" placeholder="https://yourblog.com">
+            </div>
+            <div class="modal-buttons">
+                <button id="cancelAddExternalLinkBtn" class="modal-button secondary">Cancel</button>
+                <button id="addExternalLinkBtn" class="modal-button primary">Add Link</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmDeleteExternalLinkModalOverlay" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Confirm Deletion</h3>
+            <p class="modal-message">Are you sure you want to delete link "<span id="externalLinkToDeleteName"></span>"?</p>
+            <div class="modal-buttons">
+                <button id="cancelDeleteExternalLinkBtn" class="modal-button secondary">Cancel</button>
+                <button id="confirmDeleteExternalLinkBtn" class="modal-button primary">Yes, Delete</button>
             </div>
         </div>
     </div>
