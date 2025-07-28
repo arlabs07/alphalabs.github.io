@@ -1,7 +1,7 @@
 
         (function() {
             let nameInput, logoUrlInput, faviconUrlInput, metaInput, ogTitleInput, ogDescriptionInput, ogImageUrlInput, ogImageWidthInput, ogImageHeightInput, twitterCardTypeSelect, hostingUrlInput, copyrightHolderInput, copyrightYearInput, contactEmailInput, facebookUrlInput, twitterUrlInput, linkedinUrlInput, showScrollToTopRadios;
-            let logoPreviewImg, pageList;
+            let logoPreviewImg, pageList, externalLinkList;
             let openAddPageModalBtn, addPageModalOverlay, modalNewPageNameInput, cancelAddPageBtn, confirmAddPageBtn;
             let editPageModalOverlay, modalEditPageNameInput, cancelEditPageBtn, saveEditPageBtn, currentEditingPageId = null;
             let confirmDeleteModalOverlay, pageToDeleteNameSpan, cancelDeleteBtn, confirmDeleteBtn, pageIdToDelete = null;
@@ -30,12 +30,15 @@
             let messageBox, messageText, messageCloseBtn;
             let loadUrlHtmlModalOverlay, htmlUrlInput, cancelLoadUrlHtmlBtn, confirmLoadUrlHtmlBtn;
             let addQuestionAnswerModalOverlay, qaTypeSelect, qaInputs, qaQuestion, qaAnswer, trueFalseInputs, tfStatement, tfAnswerRadios, fillInBlanksInputs, fibSentence, fibAnswers, multipleChoiceInputs, mcQuestion, mcOptions, mcCorrectAnswer, cancelAddQaBtn, addQaBtn;
+            let openAddExternalLinkModalBtn, addExternalLinkModalOverlay, externalLinkDisplayText, externalLinkUrl, cancelAddExternalLinkBtn, addExternalLinkBtn;
+            let confirmDeleteExternalLinkModalOverlay, externalLinkToDeleteNameSpan, cancelDeleteExternalLinkBtn, confirmDeleteExternalLinkBtn, externalLinkToDeleteId = null;
             let websiteList, addNewWebsiteBtn, websiteSearchInput;
             let confirmDeleteWebsiteModalOverlay, websiteToDeleteNameSpan, cancelDeleteWebsiteBtn, confirmDeleteWebsiteBtn, websiteIdToDelete = null;
 
             const noImageSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 17V7a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z'%3E%3C/path%3E%3Cline x1='12' y1='13' x2='12' y2='17'%3E%3C/line%3E%3Cpolyline points='9 10 12 13 15 10'%3E%3C/polyline%3E%3C/svg%3E";
 
             let pagesData = [];
+            let externalLinks = [];
             let currentPreviewPageId = null;
             let allWebsites = [];
             let currentWebsiteId = null;
@@ -114,6 +117,7 @@
                     name: nameInput.value || 'Untitled Website',
                     settings: currentWebsiteSettings,
                     pages: pagesData,
+                    externalLinks: externalLinks, // Save external links
                     currentPreviewPageId: currentPreviewPageId
                 };
 
@@ -153,10 +157,12 @@
                     linkedinUrlInput.value = website.settings.linkedinUrl || '';
                     document.querySelector(`input[name="showScrollToTop"][value="${website.settings.showScrollToTop ? 'yes' : 'no'}"]`).checked = true;
 
-                    pagesData = website.pages;
+                    pagesData = website.pages || [];
+                    externalLinks = website.externalLinks || []; // Load external links
                     currentPreviewPageId = website.currentPreviewPageId;
 
                     renderPages();
+                    renderExternalLinks(); // Render external links
                     updateLogoPreview();
                     openPreview();
                     showView(generatorView);
@@ -207,8 +213,10 @@
                 linkedinUrlInput.value = '';
                 document.querySelector('input[name="showScrollToTop"][value="yes"]').checked = true;
                 pagesData = getDefaultPages();
-                currentPreviewPageId = pagesData[0].id;
+                externalLinks = []; // Initialize external links for new website
+                currentPreviewPageId = pagesData.find(p => p.isDefault)?.id || pagesData[0]?.id || null;
                 renderPages();
+                renderExternalLinks(); // Render external links for new website
                 updateLogoPreview();
                 openPreview();
                 showMessage("New website started!", 'info');
@@ -256,10 +264,10 @@
 
             function getDefaultPages() {
                 return [
-                    { id: 'page1', name: 'Home', order: 1, content: '<h1>Welcome to our Homepage!</h1><p>This is the main page of your website. You can add more content here.</p><p>Feel free to edit this text in the editor view.</p><div class="formula-block-iframe">$$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$</div>' },
-                    { id: 'page2', name: 'About Us', order: 2, content: '<h1>About Our Company</h1><p>We are a team dedicated to providing excellent services.</p><p>Our mission is to empower users to create stunning websites effortlessly.</p>' },
-                    { id: 'page3', name: 'Services', order: 3, content: '<h1>Our Services</h1><p>We offer web design, development, and hosting solutions.</p><p>Contact us for custom solutions tailored to your needs.</p>' },
-                    { id: 'page4', name: 'Contact', order: 4, content: '<h1>Contact Us</h1><p>Reach out to us via email: info@arvia.com</p><p>Or call us at: 123-456-7890</p>' }
+                    { id: 'home', name: 'Home', order: 1, isDefault: true, content: '<h1>Welcome to our Homepage!</h1><p>This is the main page of your website. You can add more content here.</p><p>Feel free to edit this text in the editor view.</p><div class="formula-block-iframe">$$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$</div>' },
+                    { id: 'about-us', name: 'About Us', order: 2, isDefault: false, content: '<h1>About Our Company</h1><p>We are a team dedicated to providing excellent services.</p><p>Our mission is to empower users to create stunning websites effortlessly.</p>' },
+                    { id: 'services', name: 'Services', order: 3, isDefault: false, content: '<h1>Our Services</h1><p>We offer web design, development, and hosting solutions.</p><p>Contact us for custom solutions tailored to your needs.</p>' },
+                    { id: 'contact', name: 'Contact', order: 4, isDefault: false, content: '<h1>Contact Us</h1><p>Reach out to us via email: info@arvia.com</p><p>Or call us at: 123-456-7890</p>' }
                 ];
             }
 
@@ -703,7 +711,7 @@
                     pagesData[existingInfoPageIndex].content = infoContent;
                 } else {
                     const newOrder = pagesData.length > 0 ? Math.max(...pagesData.map(p => p.order)) + 1 : 1;
-                    pagesData.push({ id: '_websiteInfoPage', name: 'Website Info', order: newOrder, content: infoContent });
+                    pagesData.push({ id: '_websiteInfoPage', name: 'Website Info', order: newOrder, isDefault: false, content: infoContent });
                 }
             }
 
@@ -715,17 +723,49 @@
                     const pageItem = document.createElement('div');
                     pageItem.className = 'page-item';
                     pageItem.dataset.id = page.id;
-                    pageItem.innerHTML = `<span class="page-name">${escapeHtml(page.name)}</span><div class="page-actions"><span class="action-icon sort-up" data-action="move-up" data-id="${page.id}" aria-label="Move page up"><i class="fas fa-sort-up sort-icon"></i></span><span class="action-icon sort-down" data-action="move-down" data-id="${page.id}" aria-label="Move page down"><i class="fas fa-sort-down sort-icon"></i></span><span class="action-icon page-order">${index + 1}</span><span class="action-icon edit-page" data-action="edit" data-id="${page.id}" aria-label="Edit page name"><i class="fas fa-pen"></i></span><span class="action-icon delete-page" data-action="delete" data-id="${page.id}" aria-label="Delete page"><i class="fas fa-trash-alt"></i></span></div>`;
+                    pageItem.innerHTML = `
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="defaultPage" class="default-page-radio" value="${page.id}" ${page.isDefault ? 'checked' : ''}>
+                            <span class="page-name">${escapeHtml(page.name)}</span>
+                        </label>
+                        <div class="page-actions">
+                            <span class="action-icon sort-up" data-action="move-up" data-id="${page.id}" aria-label="Move page up"><i class="fas fa-sort-up sort-icon"></i></span>
+                            <span class="action-icon sort-down" data-action="move-down" data-id="${page.id}" aria-label="Move page down"><i class="fas fa-sort-down sort-icon"></i></span>
+                            <span class="action-icon page-order">${index + 1}</span>
+                            <span class="action-icon edit-page" data-action="edit" data-id="${page.id}" aria-label="Edit page name"><i class="fas fa-pen"></i></span>
+                            <span class="action-icon delete-page" data-action="delete" data-id="${page.id}" aria-label="Delete page"><i class="fas fa-trash-alt"></i></span>
+                        </div>`;
                     pageList.appendChild(pageItem);
                 });
+                // Add event listeners for new radio buttons
+                pageList.querySelectorAll('input[name="defaultPage"]').forEach(radio => {
+                    radio.addEventListener('change', (event) => {
+                        setDefaultPage(event.target.value);
+                    });
+                });
                 saveCurrentWebsiteToLibrary();
+            }
+
+            function setDefaultPage(pageId) {
+                pagesData.forEach(p => {
+                    p.isDefault = (p.id === pageId);
+                });
+                renderPages(); // Re-render to update radio button states
+                openPreview(); // Update preview to show default page
+                showMessage(`Page "${escapeHtml(pagesData.find(p => p.id === pageId)?.name || '')}" set as default.`, 'success');
             }
 
             function addPage(name) {
                 if (name.trim()) {
                     const newId = crypto.randomUUID();
                     const newOrder = pagesData.length > 0 ? Math.max(...pagesData.map(p => p.order)) + 1 : 1;
-                    pagesData.push({ id: newId, name: name.trim(), order: newOrder, content: '' });
+                    const newPage = { id: newId, name: name.trim(), order: newOrder, isDefault: false, content: '' };
+                    
+                    // If this is the first page, make it default
+                    if (pagesData.length === 0) {
+                        newPage.isDefault = true;
+                    }
+                    pagesData.push(newPage);
                     renderPages();
                     closeAddPageModal();
                     openPreview();
@@ -756,10 +796,18 @@
                     const deletedPageName = pagesData.find(p => p.id === pageIdToDelete)?.name || 'Unknown Page';
                     pagesData = pagesData.filter(p => p.id !== pageIdToDelete);
                     pagesData.forEach((p, i) => p.order = i + 1);
+                    
+                    // If the deleted page was the default, set a new default
+                    if (!pagesData.some(p => p.isDefault) && pagesData.length > 0) {
+                        pagesData[0].isDefault = true;
+                    } else if (pagesData.length === 0) {
+                        currentPreviewPageId = null;
+                    }
+
                     renderPages();
                     closeConfirmDeleteModal();
                     if (pagesData.length > 0 && currentPreviewPageId === pageIdToDelete) {
-                        currentPreviewPageId = pagesData[0].id;
+                        currentPreviewPageId = pagesData.find(p => p.isDefault)?.id || pagesData[0]?.id || null;
                     } else if (pagesData.length === 0) {
                         currentPreviewPageId = null;
                     }
@@ -774,11 +822,76 @@
                 const targetIndex = direction === 'up' ? index - 1 : index + 1;
                 if (targetIndex >= 0 && targetIndex < pagesData.length) {
                     [pagesData[index].order, pagesData[targetIndex].order] = [pagesData[targetIndex].order, pagesData[index].order];
+                    pagesData.sort((a, b) => a.order - b.order); // Re-sort after swap
                     renderPages();
                     openPreview();
                     showMessage(`Page "${escapeHtml(pagesData[index].name)}" moved ${direction}.`, 'info');
                 }
             }
+
+            function renderExternalLinks() {
+                if (!externalLinkList) return;
+                externalLinkList.innerHTML = '';
+                if (externalLinks.length === 0) {
+                    externalLinkList.innerHTML = '<p class="modal-message">No external links added yet.</p>';
+                    return;
+                }
+                externalLinks.forEach(link => {
+                    const linkItem = document.createElement('div');
+                    linkItem.className = 'external-link-item';
+                    linkItem.dataset.id = link.id;
+                    linkItem.innerHTML = `
+                        <span class="external-link-name">${escapeHtml(link.displayText)}</span>
+                        <div class="external-link-actions">
+                            <span class="action-icon delete-link" data-action="delete-external-link" data-id="${link.id}" aria-label="Delete link"><i class="fas fa-trash-alt"></i></span>
+                        </div>`;
+                    externalLinkList.appendChild(linkItem);
+                });
+                saveCurrentWebsiteToLibrary();
+            }
+
+            function addExternalLink() {
+                if (!externalLinkDisplayText || !externalLinkUrl || !addExternalLinkModalOverlay) return;
+                const displayText = externalLinkDisplayText.value.trim();
+                const url = externalLinkUrl.value.trim();
+                if (displayText && url) {
+                    externalLinks.push({ id: crypto.randomUUID(), displayText, url });
+                    renderExternalLinks();
+                    closeSpecificContentModal(addExternalLinkModalOverlay);
+                    openPreview();
+                    showMessage("External link added.", 'success', 1500);
+                } else {
+                    showMessage("Display text and URL cannot be empty.", 'error');
+                }
+            }
+
+            function deleteExternalLinkConfirmed() {
+                if (externalLinkToDeleteId) {
+                    const deletedLinkName = externalLinks.find(l => l.id === externalLinkToDeleteId)?.displayText || 'Unknown Link';
+                    externalLinks = externalLinks.filter(l => l.id !== externalLinkToDeleteId);
+                    renderExternalLinks();
+                    closeConfirmDeleteExternalLinkModal();
+                    openPreview();
+                    showMessage(`Link "${escapeHtml(deletedLinkName)}" deleted successfully!`, 'success');
+                }
+            }
+
+            function openConfirmDeleteExternalLinkModal(id) {
+                const link = externalLinks.find(l => l.id === id);
+                if (link && confirmDeleteExternalLinkModalOverlay && externalLinkToDeleteNameSpan) {
+                    externalLinkToDeleteId = id;
+                    externalLinkToDeleteNameSpan.textContent = link.displayText;
+                    confirmDeleteExternalLinkModalOverlay.classList.add('show');
+                } else {
+                    showMessage("Link not found or modal elements missing.", 'error');
+                }
+            }
+
+            function closeConfirmDeleteExternalLinkModal() {
+                if (confirmDeleteExternalLinkModalOverlay) confirmDeleteExternalLinkModalOverlay.classList.remove('show');
+                externalLinkToDeleteId = null;
+            }
+
 
             function showView(viewElement) {
                 if (generatorView) generatorView.classList.add('hidden');
@@ -820,8 +933,10 @@
                     pageLink.textContent = page.name;
                     pageLink.dataset.id = page.id;
                     pageLink.addEventListener('click', () => {
-                        currentPreviewPageId = page.id;
-                        updateIframeContent();
+                        // Update hash and let hashchange listener handle content
+                        if (previewIframe && previewIframe.contentWindow) {
+                            previewIframe.contentWindow.location.hash = page.id;
+                        }
                         closeMobileSidebar();
                     });
                     targetElement.appendChild(pageLink);
@@ -849,21 +964,26 @@
                 const showScrollToTop = document.querySelector('input[name="showScrollToTop"]:checked')?.value === 'yes';
 
                 const siteTitle = websiteName || 'My ARvia Website';
-                const currentPage = pagesData.find(p => p.id === currentPreviewPageId);
-                const pageContent = currentPage ? currentPage.content : '<h1>Welcome!</h1><p>No page selected or content available.</p>';
+                
+                // Determine the initial page to load in the iframe based on default or first page
+                const defaultPage = pagesData.find(p => p.isDefault) || pagesData[0];
+                const initialPageContent = defaultPage ? defaultPage.content : '<h1>Welcome!</h1><p>No page selected or content available.</p>';
+                const initialPageId = defaultPage ? defaultPage.id : null;
+
                 let sidebarHtml = '';
                 pagesData.sort((a, b) => a.order - b.order).forEach(page => {
-                    const activeClass = page.id === currentPreviewPageId ? 'active' : '';
+                    const activeClass = page.id === initialPageId ? 'active' : ''; // Use initialPageId for active state
                     sidebarHtml += `<div class="sidebar-page-item-iframe ${activeClass}" data-id="${page.id}">${escapeHtml(page.name)}</div>`;
                 });
-                const prevPageIndex = pagesData.findIndex(p => p.id === currentPreviewPageId) - 1;
-                const nextPageIndex = pagesData.findIndex(p => p.id === currentPreviewPageId) + 1;
-                const prevButtonHtml = `<button id="prevPageBtnIframe" class="pagination-button-iframe" ${prevPageIndex < 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
-                const nextButtonHtml = `<button id="nextPageBtnIframe" class="pagination-button-iframe" ${nextPageIndex >= pagesData.length ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+                
+                // Pagination logic
+                const currentPageIndex = pagesData.findIndex(p => p.id === initialPageId);
+                const prevButtonHtml = `<button id="prevPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex <= 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> Previous</button>`;
+                const nextButtonHtml = `<button id="nextPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex >= pagesData.length - 1 ? 'disabled' : ''}>Next <i class="fas fa-chevron-right"></i></button>`;
 
                 let qaSchema = [];
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = pageContent;
+                tempDiv.innerHTML = initialPageContent; // Use initialPageContent for schema generation
                 tempDiv.querySelectorAll('.qa-block').forEach(qaBlock => {
                     const qaType = qaBlock.dataset.qaType;
                     let question = '';
@@ -896,16 +1016,25 @@
                 const jsonLdSchema = qaSchema.length > 0 ? `<script type="application/ld+json">{"@context": "https://schema.org","@type": "FAQPage","mainEntity": ${JSON.stringify(qaSchema)}}</script>` : '';
                 const keywords = generateKeywordsFromContent();
 
+                let externalLinksHtml = '';
+                externalLinks.forEach(link => {
+                    externalLinksHtml += `<a href="${escapeHtml(link.url)}" target="_blank" class="external-link-iframe">${escapeHtml(link.displayText)}</a>`;
+                });
+
                 const cssStyles = `
                     * {box-sizing: border-box;}
                     html, body {width: 100%; height: 100%; overflow-x: hidden; scroll-behavior: smooth;}
                     body {font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: #1a1a1a; color: #FFFFFF; display: flex; flex-direction: column; min-height: 100vh;}
                     .preview-header-iframe {background-color: #0a0a0a; color: #FFFFFF; padding: 0.9375rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+                    .secondary-header-iframe {background-color: rgba(0, 0, 0, 0.7); padding: 0.5rem 1.25rem; border-bottom: none; position: fixed; top: 4.5rem; left: 0; width: 100%; z-index: 99; overflow-x: auto; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+                    .secondary-header-content-iframe {display: flex; gap: 1rem; justify-content: center;}
+                    .external-link-iframe {color: #BB86FC; text-decoration: none; padding: 0.3rem 0.5rem; border-radius: 0.3125rem; transition: background-color 0.3s ease, color 0.3s ease;}
+                    .external-link-iframe:hover {background-color: #BB86FC; color: #000000;}
                     .logo-section-iframe {display: flex; align-items: center;}
                     .arvia-logo-iframe {width: 2.5rem; height: 2.5rem; margin-right: 0.625rem; border-radius: 0.3125rem; object-fit: contain;}
                     .arvia-text-iframe {font-family: 'Comic Sans MS', cursive, sans-serif; font-size: 2rem; font-weight: bold; color: #805BE9; margin-left: 0.3125rem;}
                     .menu-button-iframe {font-size: 1.8rem; color: #BB86FC; cursor: pointer; display: none;}
-                    .preview-content-area-iframe {display: flex; flex-grow: 1; width: 100%; overflow: hidden; margin-top: 5.5rem; height: calc(100vh - 5.5rem);}
+                    .preview-content-area-iframe {display: flex; flex-grow: 1; width: 100%; overflow: hidden; margin-top: calc(4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}); height: calc(100vh - (4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}));} /* Adjusted margin-top for secondary header */
                     .preview-sidebar-iframe {width: 15.625rem; background-color: #0a0a0a; border-right: 2px solid #FFFFFF; flex-shrink: 0; overflow-y: auto; padding: 1.25rem 0; display: flex; flex-direction: column; height: 100%;}
                     .sidebar-logo-section-iframe {display: none;}
                     .sidebar-page-item-iframe {padding: 0.625rem 1.25rem; color: #FFFFFF; cursor: pointer; transition: background-color 0.3s ease, color 0.3s ease; border-radius: 0.3125rem; margin: 0.25rem 0.625rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
@@ -947,6 +1076,7 @@
                     .qa-block li {margin-bottom: 0.3rem;}
                     @media (max-width: 48rem) {
                         .preview-header-iframe {padding: 0.625rem 0.9375rem;}
+                        .secondary-header-iframe {top: 4.5rem; padding: 0.4rem 0.9375rem;}
                         .arvia-text-iframe {font-size: 1.8rem;}
                         .arvia-logo-iframe {width: 2.1875rem; height: 2.1875rem;}
                         .menu-button-iframe {display: block; order: 2;}
@@ -955,7 +1085,7 @@
                         .main-content-iframe {padding: 1.25rem;}
                         .sidebar-logo-section-iframe {display: none;}
                         .mobile-sidebar-iframe .sidebar-logo-section-iframe {display: flex;}
-                        .preview-content-area-iframe {margin-top: 4.5rem; height: calc(100vh - 4.5rem);}
+                        .preview-content-area-iframe {margin-top: calc(4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}); height: calc(100vh - (4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}));} /* Adjusted margin-top for secondary header */
                     }
                     @media (min-width: 48.0625rem) {
                         .menu-button-iframe {display: none;}
@@ -970,7 +1100,7 @@
                     }
                 `;
 
-                return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(siteTitle)}</title>${metaDescription ? `<meta name="description" content="${escapeHtml(metaDescription)}">` : ''}<meta name="keywords" content="${escapeHtml(keywords)}"><meta name="author" content="${escapeHtml(copyrightHolder || 'ARvia')}"><meta name="generator" content="ARvia Website Generator"><meta name="theme-color" content="#BB86FC"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">${faviconUrl ? `<link rel="icon" href="${escapeHtml(faviconUrl)}" type="image/x-icon">` : ''}<meta property="og:title" content="${escapeHtml(ogTitle || siteTitle)}"><meta property="og:description" content="${escapeHtml(ogDescription || metaDescription)}">${ogImageUrl ? `<meta property="og:image" content="${escapeHtml(ogImageUrl)}">` : ''}${ogImageWidth ? `<meta property="og:image:width" content="${escapeHtml(ogImageWidth)}">` : ''}${ogImageHeight ? `<meta property="og:image:height" content="${escapeHtml(ogImageHeight)}">` : ''}<meta property="og:url" content="${escapeHtml(hostingUrl || window.location.href)}"><meta property="og:type" content="website"><meta name="twitter:card" content="${escapeHtml(twitterCardType)}">${ogTitle ? `<meta name="twitter:title" content="${escapeHtml(ogTitle)}">` : ''}${ogDescription ? `<meta name="twitter:description" content="${escapeHtml(ogDescription)}">` : ''}${ogImageUrl ? `<meta name="twitter:image" content="${escapeHtml(ogImageUrl)}">` : ''}<meta name="arvia-website-name" content="${escapeHtml(websiteName)}"><meta name="arvia-logo-url" content="${escapeHtml(logoUrl)}"><meta name="arvia-favicon-url" content="${escapeHtml(faviconUrl)}"><meta name="arvia-hosting-url" content="${escapeHtml(hostingUrl)}"><meta name="arvia-copyright-holder" content="${escapeHtml(copyrightHolder)}"><meta name="arvia-copyright-year" content="${escapeHtml(copyrightYear)}"><meta name="arvia-contact-email" content="${escapeHtml(contactEmail)}"><meta name="arvia-facebook-url" content="${escapeHtml(facebookUrl)}"><meta name="arvia-twitter-url" content="${escapeHtml(twitterUrl)}"><meta name="arvia-linkedin-url" content="${escapeHtml(linkedinUrl)}"><meta name="arvia-show-scroll-to-top" content="${showScrollToTop ? 'yes' : 'no'}">${jsonLdSchema}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdn.tailwindcss.com"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script><script>MathJax = {tex: {inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']]}, svg: {fontCache: 'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script><style>${cssStyles}</style></head><body><header class="preview-header-iframe"><div class="logo-section-iframe"><img src="${escapeHtml(logoUrl || "https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg")}" alt="ARvia Logo" class="arvia-logo-iframe"><span class="arvia-text-iframe">${escapeHtml(siteTitle)}</span></div><span id="menuButtonIframe" class="menu-button-iframe" aria-label="Open Mobile Menu"><i class="fas fa-bars"></i></span></header><div class="preview-content-area-iframe"><div id="previewFixedSidebarIframe" class="preview-sidebar-iframe"><div id="previewSidebarPageListIframe">${sidebarHtml}</div></div><div class="main-content-iframe"><div class="content-wrapper-iframe"><div id="actualPageContentIframe" class="actual-page-content-iframe">${pageContent}</div></div><div id="previewPaginationIframe" class="preview-pagination-iframe">${prevButtonHtml}${nextButtonHtml}</div></div></div><div id="mobileSidebarOverlayIframe" class="mobile-sidebar-overlay-iframe"><div id="mobileSidebarIframe" class="mobile-sidebar-iframe"><div class="sidebar-logo-section-iframe"><img src="${escapeHtml(logoUrl || "https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg")}" alt="ARvia Logo" class="arvia-logo-iframe"><span class="arvia-text-iframe" style="font-size: 1.5rem;">${escapeHtml(siteTitle)}</span></div><div id="mobileSidebarPageListIframe">${sidebarHtml}</div></div></div>${showScrollToTop ? `<button id="scrollToTopBtnIframe" class="scroll-to-top-btn-iframe" aria-label="Scroll to top"><i class="fas fa-arrow-circle-up"></i></button>` : ''}<script>const pagesDataIframe = ${JSON.stringify(pagesData)};let currentPageIdIframe = '${currentPreviewPageId}';const previewSidebarPageListIframe = document.getElementById('previewSidebarPageListIframe');const mobileSidebarPageListIframe = document.getElementById('mobileSidebarPageListIframe');const actualPageContentIframe = document.getElementById('actualPageContentIframe');const menuButtonIframe = document.getElementById('menuButtonIframe');const mobileSidebarOverlayIframe = document.getElementById('mobileSidebarOverlayIframe');const prevPageBtnIframe = document.getElementById('prevPageBtnIframe');const nextPageBtnIframe = document.getElementById('nextPageBtnIframe');const scrollToTopBtnIframe = document.getElementById('scrollToTopBtnIframe');const mainContentIframe = document.querySelector('.main-content-iframe');function animatePageContent() {if (!actualPageContentIframe) return;actualPageContentIframe.querySelectorAll('h1, h2, h3, p, ul, ol, table, pre, img, iframe, .formula-block-iframe, strong, em, a, .qa-block').forEach(el => {el.style.opacity = '0';el.style.transform = 'translateY(20px)';});anime({targets: '#actualPageContentIframe h1, #actualPageContentIframe h2, #actualPageContentIframe h3, #actualPageContentIframe p, #actualPageContentIframe ul, #actualPageContentIframe ol, #actualPageContentIframe table, #actualPageContentIframe pre, #actualPageContentIframe img, #actualPageContentIframe iframe, #actualPageContentIframe .formula-block-iframe, #actualPageContentIframe strong, #actualPageContentIframe em, #actualPageContentIframe a, #actualPageContentIframe .qa-block',opacity: [0, 1],translateY: [20, 0],delay: anime.stagger(50, {start: 300}),easing: 'easeOutQuad'});}function displayPageContentIframe(pageId) {const page = pagesDataIframe.find(p => p.id === pageId);if (page && actualPageContentIframe) {actualPageContentIframe.innerHTML = page.content;currentPageIdIframe = pageId;document.querySelectorAll('.sidebar-page-item-iframe').forEach(item => {if (item.dataset.id === pageId) {item.classList.add('active');} else {item.classList.remove('active');}});initializeIframeScripts();}}function updatePaginationButtonsIframe() {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (prevPageBtnIframe) prevPageBtnIframe.disabled = currentIndex <= 0;if (nextPageBtnIframe) nextPageBtnIframe.disabled = currentIndex >= pagesDataIframe.length - 1;}function initializeIframeScripts() {if (typeof MathJax !== 'undefined') {MathJax.typesetPromise([actualPageContentIframe]).then(() => {animatePageContent();}).catch(err => console.error("MathJax typesetting error:", err));} else {animatePageContent();}actualPageContentIframe.querySelectorAll('pre code').forEach((block) => {if (typeof hljs !== 'undefined') {hljs.highlightElement(block);}const copyButton = document.createElement('button');copyButton.className = 'copy-code-btn-iframe';copyButton.textContent = 'Copy';copyButton.onclick = () => {try {const codeText = block.textContent;const tempInput = document.createElement('textarea');tempInput.value = codeText;document.body.appendChild(tempInput);tempInput.select();document.execCommand('copy');document.body.removeChild(tempInput);copyButton.textContent = 'Copied!';setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);} catch (err) {console.error("Failed to copy code in iframe:", err);}};if (!block.parentNode.querySelector('.copy-code-btn-iframe')) {block.parentNode.style.position = 'relative';block.parentNode.appendChild(copyButton);}});updatePaginationButtonsIframe();}if (previewSidebarPageListIframe) {previewSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {displayPageContentIframe(target.dataset.id);}});}if (mobileSidebarPageListIframe) {mobileSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {displayPageContentIframe(target.dataset.id);mobileSidebarOverlayIframe.classList.remove('show');}});}if (menuButtonIframe) {menuButtonIframe.addEventListener('click', () => {mobileSidebarOverlayIframe.classList.add('show');});}if (mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.addEventListener('click', (event) => {if (event.target === mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.classList.remove('show');}});}if (prevPageBtnIframe) {prevPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex > 0) {displayPageContentIframe(pagesDataIframe[currentIndex - 1].id);}});}if (nextPageBtnIframe) {nextPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex < pagesDataIframe.length - 1) {displayPageContentIframe(pagesDataIframe[currentIndex + 1].id);}});}if (scrollToTopBtnIframe && mainContentIframe) {mainContentIframe.addEventListener('scroll', () => {if (mainContentIframe.scrollTop > (mainContentIframe.clientHeight * 0.5)) {scrollToTopBtnIframe.classList.add('show');} else {scrollToTopBtnIframe.classList.remove('show');}});scrollToTopBtnIframe.addEventListener('click', () => {mainContentIframe.scrollTo({top: 0, behavior: 'smooth'});scrollToTopBtnIframe.classList.remove('show');});}document.addEventListener('DOMContentLoaded', () => {if (currentPageIdIframe) {displayPageContentIframe(currentPageIdIframe);}});</script></body></html>`;
+                return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(siteTitle)}</title>${metaDescription ? `<meta name="description" content="${escapeHtml(metaDescription)}">` : ''}<meta name="keywords" content="${escapeHtml(keywords)}"><meta name="author" content="${escapeHtml(copyrightHolder || 'ARvia')}"><meta name="generator" content="ARvia Website Generator"><meta name="theme-color" content="#BB86FC"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">${faviconUrl ? `<link rel="icon" href="${escapeHtml(faviconUrl)}" type="image/x-icon">` : ''}<meta property="og:title" content="${escapeHtml(ogTitle || siteTitle)}"><meta property="og:description" content="${escapeHtml(ogDescription || metaDescription)}">${ogImageUrl ? `<meta property="og:image" content="${escapeHtml(ogImageUrl)}">` : ''}${ogImageWidth ? `<meta property="og:image:width" content="${escapeHtml(ogImageWidth)}">` : ''}${ogImageHeight ? `<meta property="og:image:height" content="${escapeHtml(ogImageHeight)}">` : ''}<meta property="og:url" content="${escapeHtml(hostingUrl || window.location.href)}"><meta property="og:type" content="website"><meta name="twitter:card" content="${escapeHtml(twitterCardType)}">${ogTitle ? `<meta name="twitter:title" content="${escapeHtml(ogTitle)}">` : ''}${ogDescription ? `<meta name="twitter:description" content="${escapeHtml(ogDescription)}">` : ''}${ogImageUrl ? `<meta name="twitter:image" content="${escapeHtml(ogImageUrl)}">` : ''}<meta name="arvia-website-name" content="${escapeHtml(websiteName)}"><meta name="arvia-logo-url" content="${escapeHtml(logoUrl)}"><meta name="arvia-favicon-url" content="${escapeHtml(faviconUrl)}"><meta name="arvia-hosting-url" content="${escapeHtml(hostingUrl)}"><meta name="arvia-copyright-holder" content="${escapeHtml(copyrightHolder)}"><meta name="arvia-copyright-year" content="${escapeHtml(copyrightYear)}"><meta name="arvia-contact-email" content="${escapeHtml(contactEmail)}"><meta name="arvia-facebook-url" content="${escapeHtml(facebookUrl)}"><meta name="arvia-twitter-url" content="${escapeHtml(twitterUrl)}"><meta name="arvia-linkedin-url" content="${escapeHtml(linkedinUrl)}"><meta name="arvia-show-scroll-to-top" content="${showScrollToTop ? 'yes' : 'no'}"><meta name="arvia-external-links" content="${escapeHtml(JSON.stringify(externalLinks))}">${jsonLdSchema}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script><script src="https://cdn.tailwindcss.com"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script><script>MathJax = {tex: {inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']]}, svg: {fontCache: 'global'}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script><style>${cssStyles}</style></head><body><header class="preview-header-iframe"><div class="logo-section-iframe"><img src="${escapeHtml(logoUrl || "https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg")}" alt="ARvia Logo" class="arvia-logo-iframe"><span class="arvia-text-iframe">${escapeHtml(siteTitle)}</span></div><span id="menuButtonIframe" class="menu-button-iframe" aria-label="Open Mobile Menu"><i class="fas fa-bars"></i></span></header>${externalLinksHtml ? `<div class="secondary-header-iframe"><div class="secondary-header-content-iframe">${externalLinksHtml}</div></div>` : ''}<div class="preview-content-area-iframe"><div id="previewFixedSidebarIframe" class="preview-sidebar-iframe"><div id="previewSidebarPageListIframe">${sidebarHtml}</div></div><div class="main-content-iframe"><div class="content-wrapper-iframe"><div id="actualPageContentIframe" class="actual-page-content-iframe">${initialPageContent}</div></div><div id="previewPaginationIframe" class="preview-pagination-iframe">${prevButtonHtml}${nextButtonHtml}</div></div></div><div id="mobileSidebarOverlayIframe" class="mobile-sidebar-overlay-iframe"><div id="mobileSidebarIframe" class="mobile-sidebar-iframe"><div class="sidebar-logo-section-iframe"><img src="${escapeHtml(logoUrl || "https://arlabs07.github.io/Learning-labs.github.io/arvia.jpg")}" alt="ARvia Logo" class="arvia-logo-iframe"><span class="arvia-text-iframe" style="font-size: 1.5rem;">${escapeHtml(siteTitle)}</span></div><div id="mobileSidebarPageListIframe">${sidebarHtml}</div></div></div>${showScrollToTop ? `<button id="scrollToTopBtnIframe" class="scroll-to-top-btn-iframe" aria-label="Scroll to top"><i class="fas fa-arrow-circle-up"></i></button>` : ''}<script>const pagesDataIframe = ${JSON.stringify(pagesData)};let currentPageIdIframe = '${initialPageId}';const previewSidebarPageListIframe = document.getElementById('previewSidebarPageListIframe');const mobileSidebarPageListIframe = document.getElementById('mobileSidebarPageListIframe');const actualPageContentIframe = document.getElementById('actualPageContentIframe');const menuButtonIframe = document.getElementById('menuButtonIframe');const mobileSidebarOverlayIframe = document.getElementById('mobileSidebarOverlayIframe');const prevPageBtnIframe = document.getElementById('prevPageBtnIframe');const nextPageBtnIframe = document.getElementById('nextPageBtnIframe');const scrollToTopBtnIframe = document.getElementById('scrollToTopBtnIframe');const mainContentIframe = document.querySelector('.main-content-iframe');function animatePageContent() {if (!actualPageContentIframe) return;actualPageContentIframe.querySelectorAll('h1, h2, h3, p, ul, ol, table, pre, img, iframe, .formula-block-iframe, strong, em, a, .qa-block').forEach(el => {el.style.opacity = '0';el.style.transform = 'translateY(20px)';});anime({targets: '#actualPageContentIframe h1, #actualPageContentIframe h2, #actualPageContentIframe h3, #actualPageContentIframe p, #actualPageContentIframe ul, #actualPageContentIframe ol, #actualPageContentIframe table, #actualPageContentIframe pre, #actualPageContentIframe img, #actualPageContentIframe iframe, #actualPageContentIframe .formula-block-iframe, #actualPageContentIframe strong, #actualPageContentIframe em, #actualPageContentIframe a, #actualPageContentIframe .qa-block',opacity: [0, 1],translateY: [20, 0],delay: anime.stagger(50, {start: 300}),easing: 'easeOutQuad'});}function displayPageContentIframe(pageId) {const page = pagesDataIframe.find(p => p.id === pageId);if (page && actualPageContentIframe) {actualPageContentIframe.innerHTML = page.content;currentPageIdIframe = pageId;document.querySelectorAll('.sidebar-page-item-iframe').forEach(item => {if (item.dataset.id === pageId) {item.classList.add('active');} else {item.classList.remove('active');}});updatePaginationButtonsIframe();initializeIframeScripts();}}function updatePaginationButtonsIframe() {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (prevPageBtnIframe) prevPageBtnIframe.disabled = currentIndex <= 0;if (nextPageBtnIframe) nextPageBtnIframe.disabled = currentIndex >= pagesDataIframe.length - 1;}function initializeIframeScripts() {if (typeof MathJax !== 'undefined') {MathJax.typesetPromise([actualPageContentIframe]).then(() => {animatePageContent();}).catch(err => console.error("MathJax typesetting error:", err));} else {animatePageContent();}actualPageContentIframe.querySelectorAll('pre code').forEach((block) => {if (typeof hljs !== 'undefined') {hljs.highlightElement(block);}const copyButton = document.createElement('button');copyButton.className = 'copy-code-btn-iframe';copyButton.textContent = 'Copy';copyButton.onclick = () => {try {const codeText = block.textContent;const tempInput = document.createElement('textarea');tempInput.value = codeText;document.body.appendChild(tempInput);tempInput.select();document.execCommand('copy');document.body.removeChild(tempInput);copyButton.textContent = 'Copied!';setTimeout(() => { copyButton.textContent = 'Copy'; }, 2000);} catch (err) {console.error("Failed to copy code in iframe:", err);}};if (!block.parentNode.querySelector('.copy-code-btn-iframe')) {block.parentNode.style.position = 'relative';block.parentNode.appendChild(copyButton);}});updatePaginationButtonsIframe();}if (previewSidebarPageListIframe) {previewSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {window.location.hash = target.dataset.id;}});}if (mobileSidebarPageListIframe) {mobileSidebarPageListIframe.addEventListener('click', (event) => {const target = event.target.closest('.sidebar-page-item-iframe');if (target && target.dataset.id) {window.location.hash = target.dataset.id;mobileSidebarOverlayIframe.classList.remove('show');}});}if (menuButtonIframe) {menuButtonIframe.addEventListener('click', () => {mobileSidebarOverlayIframe.classList.add('show');});}if (mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.addEventListener('click', (event) => {if (event.target === mobileSidebarOverlayIframe) {mobileSidebarOverlayIframe.classList.remove('show');}});}if (prevPageBtnIframe) {prevPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex > 0) {window.location.hash = pagesDataIframe[currentIndex - 1].id;}});}if (nextPageBtnIframe) {nextPageBtnIframe.addEventListener('click', () => {const currentIndex = pagesDataIframe.findIndex(p => p.id === currentPageIdIframe);if (currentIndex < pagesDataIframe.length - 1) {window.location.hash = pagesDataIframe[currentIndex + 1].id;}});}if (scrollToTopBtnIframe && mainContentIframe) {mainContentIframe.addEventListener('scroll', () => {if (mainContentIframe.scrollTop > (mainContentIframe.clientHeight * 0.5)) {scrollToTopBtnIframe.classList.add('show');} else {scrollToTopBtnIframe.classList.remove('show');}});scrollToTopBtnIframe.addEventListener('click', () => {mainContentIframe.scrollTo({top: 0, behavior: 'smooth'});scrollToTopBtnIframe.classList.remove('show');});}window.addEventListener('hashchange', () => {const hashId = window.location.hash.substring(1);const targetPage = pagesDataIframe.find(p => p.id === hashId);if (targetPage) {displayPageContentIframe(targetPage.id);} else if (pagesDataIframe.length > 0) {displayPageContentIframe(pagesDataIframe.find(p => p.isDefault)?.id || pagesDataIframe[0].id);}});document.addEventListener('DOMContentLoaded', () => {const initialHash = window.location.hash.substring(1);const defaultPageId = pagesDataIframe.find(p => p.isDefault)?.id || (pagesDataIframe.length > 0 ? pagesDataIframe[0].id : null);if (initialHash && pagesDataIframe.some(p => p.id === initialHash)) {displayPageContentIframe(initialHash);} else if (defaultPageId) {displayPageContentIframe(defaultPageId);}})</script></body></html>`;
             }
 
             function updateIframeContent() {
@@ -1081,6 +1211,18 @@
                         document.querySelector(`input[name="showScrollToTop"][value="${showScrollToTopMeta}"]`).checked = true;
                     }
 
+                    const externalLinksMeta = doc.querySelector('meta[name="arvia-external-links"]')?.getAttribute('content');
+                    if (externalLinksMeta) {
+                        try {
+                            externalLinks = JSON.parse(externalLinksMeta);
+                        } catch (e) {
+                            console.error("Error parsing external links from meta tag:", e);
+                            externalLinks = [];
+                        }
+                    } else {
+                        externalLinks = [];
+                    }
+
                     const actualPageContentDiv = doc.getElementById('actualPageContentIframe');
                     if (actualPageContentDiv && currentPageIdInEditor) {
                         const page = pagesData.find(p => p.id === currentPageIdInEditor);
@@ -1095,6 +1237,7 @@
                     }
                     saveCurrentWebsiteToLibrary();
                     renderPages();
+                    renderExternalLinks(); // Re-render external links after parsing
                     updateLogoPreview();
                     openPreview();
                 } catch (error) {
@@ -1172,11 +1315,8 @@
                 generateWebsiteInfoPage();
                 renderPreviewSidebar(previewFixedSidebar);
                 renderPreviewSidebar(mobileSidebarPageList);
-                if (pagesData.length > 0 && !pagesData.some(p => p.id === currentPreviewPageId)) {
-                    currentPreviewPageId = pagesData[0].id;
-                } else if (pagesData.length === 0) {
-                    currentPreviewPageId = null;
-                }
+                // Ensure currentPreviewPageId is set to the default or first page before updating iframe
+                currentPreviewPageId = pagesData.find(p => p.isDefault)?.id || pagesData[0]?.id || null;
                 updateIframeContent();
                 showView(previewView);
             }
@@ -1202,6 +1342,7 @@
                 showScrollToTopRadios = document.querySelectorAll('input[name="showScrollToTop"]');
                 logoPreviewImg = document.getElementById('logoPreview');
                 pageList = document.getElementById('pageList');
+                externalLinkList = document.getElementById('externalLinkList');
                 openAddPageModalBtn = document.getElementById('openAddPageModal');
                 addPageModalOverlay = document.getElementById('addPageModalOverlay');
                 modalNewPageNameInput = document.getElementById('modalNewPageName');
@@ -1325,6 +1466,16 @@
                 mcCorrectAnswer = document.getElementById('mcCorrectAnswer');
                 cancelAddQaBtn = document.getElementById('cancelAddQaBtn');
                 addQaBtn = document.getElementById('addQaBtn');
+                openAddExternalLinkModalBtn = document.getElementById('openAddExternalLinkModal');
+                addExternalLinkModalOverlay = document.getElementById('addExternalLinkModalOverlay');
+                externalLinkDisplayText = document.getElementById('externalLinkDisplayText');
+                externalLinkUrl = document.getElementById('externalLinkUrl');
+                cancelAddExternalLinkBtn = document.getElementById('cancelAddExternalLinkBtn');
+                addExternalLinkBtn = document.getElementById('addExternalLinkBtn');
+                confirmDeleteExternalLinkModalOverlay = document.getElementById('confirmDeleteExternalLinkModalOverlay');
+                externalLinkToDeleteNameSpan = document.getElementById('externalLinkToDeleteName');
+                cancelDeleteExternalLinkBtn = document.getElementById('cancelDeleteExternalLinkBtn');
+                confirmDeleteExternalLinkBtn = document.getElementById('confirmDeleteExternalLinkBtn');
                 websiteList = document.getElementById('websiteList');
                 addNewWebsiteBtn = document.getElementById('addNewWebsiteBtn');
                 websiteSearchInput = document.getElementById('websiteSearchInput');
@@ -1396,14 +1547,15 @@
                         const target = event.target.closest('.action-icon, .page-item');
                         if (!target) return;
                         const pageItemId = target.closest('.page-item')?.dataset.id;
+                        // Prevent opening editor when clicking on action icons or radio button
                         if (target.classList.contains('action-icon')) {
                             const action = target.dataset.action;
                             const id = target.dataset.id;
-                            if (action === 'edit') openPageModal(id);
+                            if (action === 'edit') openEditPageModal(id);
                             else if (action === 'delete') openConfirmDeleteModal(id);
                             else if (action === 'move-up') movePage(id, 'up');
                             else if (action === 'move-down') movePage(id, 'down');
-                        } else if (target.classList.contains('page-item')) {
+                        } else if (target.tagName !== 'INPUT') { // If not an action icon or radio button, open editor
                             openPageEditor(pageItemId);
                         }
                     });
@@ -1492,6 +1644,22 @@
                 if (cancelAddQaBtn) cancelAddQaBtn.addEventListener('click', () => closeSpecificContentModal(addQuestionAnswerModalOverlay));
                 if (addQaBtn) addQaBtn.addEventListener('click', addQuestionAnswerToEditor);
                 if (addQuestionAnswerModalOverlay) addQuestionAnswerModalOverlay.addEventListener('click', (event) => { if (event.target === addQuestionAnswerModalOverlay) closeSpecificContentModal(addQuestionAnswerModalOverlay); });
+                if (openAddExternalLinkModalBtn) openAddExternalLinkModalBtn.addEventListener('click', () => openSpecificContentModal(addExternalLinkModalOverlay));
+                if (cancelAddExternalLinkBtn) cancelAddExternalLinkBtn.addEventListener('click', () => closeSpecificContentModal(addExternalLinkModalOverlay));
+                if (addExternalLinkBtn) addExternalLinkBtn.addEventListener('click', addExternalLink);
+                if (addExternalLinkModalOverlay) addExternalLinkModalOverlay.addEventListener('click', (event) => { if (event.target === addExternalLinkModalOverlay) closeSpecificContentModal(addExternalLinkModalOverlay); });
+                if (externalLinkList) {
+                    externalLinkList.addEventListener('click', (event) => {
+                        const target = event.target.closest('.action-icon, .external-link-item');
+                        if (!target) return;
+                        const linkId = target.closest('.external-link-item')?.dataset.id;
+                        if (target.dataset.action === 'delete-external-link') openConfirmDeleteExternalLinkModal(linkId);
+                    });
+                }
+                if (cancelDeleteExternalLinkBtn) cancelDeleteExternalLinkBtn.addEventListener('click', closeConfirmDeleteExternalLinkModal);
+                if (confirmDeleteExternalLinkBtn) confirmDeleteExternalLinkBtn.addEventListener('click', deleteExternalLinkConfirmed);
+                if (confirmDeleteExternalLinkModalOverlay) confirmDeleteExternalLinkModalOverlay.addEventListener('click', (event) => { if (event.target === confirmDeleteExternalLinkModalOverlay) closeConfirmDeleteExternalLinkModal(); });
+
                 if (addNewWebsiteBtn) addNewWebsiteBtn.addEventListener('click', startNewWebsite);
                 if (websiteList) {
                     websiteList.addEventListener('click', (event) => {
@@ -1504,7 +1672,7 @@
                 }
                 if (websiteSearchInput) websiteSearchInput.addEventListener('input', (event) => renderWebsiteList(event.target.value));
                 if (cancelDeleteWebsiteBtn) cancelDeleteWebsiteBtn.addEventListener('click', closeConfirmDeleteWebsiteModal);
-                if (confirmDeleteWebsiteBtn) confirmDeleteWebsiteBtn.addEventListener('click', deleteWebsiteFromLibraryConfirmed);
+                   if (confirmDeleteWebsiteBtn) confirmDeleteWebsiteBtn.addEventListener('click', deleteWebsiteFromLibraryConfirmed);
                 if (confirmDeleteWebsiteModalOverlay) confirmDeleteWebsiteModalOverlay.addEventListener('click', (event) => { if (event.target === confirmDeleteWebsiteModalOverlay) closeConfirmDeleteWebsiteModal(); });
 
                 loadAllWebsitesFromLocalStorage();
