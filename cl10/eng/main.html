@@ -884,61 +884,6 @@
         })
     </script>
     
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-  const firebaseConfig = {"apiKey":"AIzaSyCqyCcs2R2e7AegGjvFAwG98wlamtbHvZY","authDomain":"bard-frontend.firebaseapp.com","projectId":"bard-frontend","storageBucket":"bard-frontend.firebasestorage.app","messagingSenderId":"175205271074","appId":"1:175205271074:web:2b7bd4d34d33bf38e6ec7b"};
-  const appId = "c_8e594debea8c3973_website-hit-counter-react-app-720";
-  const userId = "10096215150920956165";
-  const websiteUrl = "https://arlabs07.github.io/alphalabs.github.io/cl10/eng/main";
-  const websiteId = "aHR0cHM6Ly9hcmxhYnMwNy5naXRodWIuaW8vYWxwaGFsYWJzLmdpdGh1Yi5pby9jbDEwL2VuZy9tYWlu";
-
-  // Simple cookie functions for visitor tracking
-  const getCookie = (name) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-  };
-
-  const setCookie = (name, value, days) => {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-    const expires = `expires=${date.toUTCString()}`;
-    document.cookie = `${name}=${value};${expires};path=/`;
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const trackHit = async () => {
-    let visitorId = getCookie('gemini-hit-counter-visitor-id-' + websiteId);
-    if (!visitorId) {
-      visitorId = crypto.randomUUID();
-      setCookie('gemini-hit-counter-visitor-id-' + websiteId, visitorId, 365); // Expires in 1 year
-    }
-
-    try {
-      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `hits-${userId}`), {
-        url: window.location.href,
-        referrer: document.referrer || 'direct',
-        userAgent: navigator.userAgent,
-        timestamp: serverTimestamp(),
-        visitorId: visitorId,
-        websiteUrl: websiteUrl
-      });
-    } catch (e) {
-      console.error("Error tracking hit: ", e);
-    }
-  };
-
-  if (document.readyState === "complete") {
-    trackHit();
-  } else {
-    window.addEventListener("load", trackHit);
-  }
-</script>
-    
 </body>
 
 </html>
