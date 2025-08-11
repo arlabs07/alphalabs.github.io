@@ -1,4 +1,5 @@
 
+        
         (function() {
             let nameInput, logoUrlInput, faviconUrlInput, metaInput, ogTitleInput, ogDescriptionInput, ogImageUrlInput, ogImageWidthInput, ogImageHeightInput, twitterCardTypeSelect, hostingUrlInput, copyrightHolderInput, copyrightYearInput, contactEmailInput, facebookUrlInput, twitterUrlInput, linkedinUrlInput, showScrollToTopRadios;
             let logoPreviewImg, pageList, externalLinkList;
@@ -32,7 +33,7 @@
             let addQuestionAnswerModalOverlay, qaTypeSelect, qaInputs, qaQuestion, qaAnswer, trueFalseInputs, tfStatement, tfAnswerRadios, fillInBlanksInputs, fibSentence, fibAnswers, multipleChoiceInputs, mcQuestion, mcOptions, mcCorrectAnswer, cancelAddQaBtn, addQaBtn;
             let openAddExternalLinkModalBtn, addExternalLinkModalOverlay, externalLinkDisplayText, externalLinkUrl, cancelAddExternalLinkBtn, addExternalLinkBtn;
             let confirmDeleteExternalLinkModalOverlay, externalLinkToDeleteNameSpan, cancelDeleteExternalLinkBtn, confirmDeleteExternalLinkBtn, externalLinkToDeleteId = null;
-            let websiteList, addNewWebsiteBtn, websiteSearchInput;
+            let websiteList, addNewWebsiteBtn, websiteSearchInput, importWebsiteBtn, importFileInput;
             let confirmDeleteWebsiteModalOverlay, websiteToDeleteNameSpan, cancelDeleteWebsiteBtn, confirmDeleteWebsiteBtn, websiteIdToDelete = null;
 
             const noImageSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 17V7a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z'%3E%3C/path%3E%3Cline x1='12' y1='13' x2='12' y2='17'%3E%3C/line%3E%3Cpolyline points='9 10 12 13 15 10'%3E%3C/polyline%3E%3C/svg%3E";
@@ -117,18 +118,16 @@
                     name: nameInput.value || 'Untitled Website',
                     settings: currentWebsiteSettings,
                     pages: pagesData,
-                    externalLinks: externalLinks, // Save external links
+                    externalLinks: externalLinks,
                     currentPreviewPageId: currentPreviewPageId
                 };
 
                 const existingIndex = allWebsites.findIndex(w => w.id === currentWebsiteData.id);
                 if (existingIndex !== -1) {
                     allWebsites[existingIndex] = currentWebsiteData;
-                    showMessage(`Website "${escapeHtml(currentWebsiteData.name)}" updated in library!`, 'success');
                 } else {
                     allWebsites.push(currentWebsiteData);
                     currentWebsiteId = currentWebsiteData.id;
-                    showMessage(`Website "${escapeHtml(currentWebsiteData.name)}" saved to library!`, 'success');
                 }
                 saveAllWebsitesToLocalStorage();
                 renderWebsiteList();
@@ -158,11 +157,11 @@
                     document.querySelector(`input[name="showScrollToTop"][value="${website.settings.showScrollToTop ? 'yes' : 'no'}"]`).checked = true;
 
                     pagesData = website.pages || [];
-                    externalLinks = website.externalLinks || []; // Load external links
+                    externalLinks = website.externalLinks || [];
                     currentPreviewPageId = website.currentPreviewPageId;
 
                     renderPages();
-                    renderExternalLinks(); // Render external links
+                    renderExternalLinks();
                     updateLogoPreview();
                     openPreview();
                     showView(generatorView);
@@ -174,6 +173,64 @@
                 } else {
                     showMessage("Website not found in library.", 'error');
                 }
+            }
+            
+            function exportWebsite(websiteId) {
+                const website = allWebsites.find(w => w.id === websiteId);
+                if (website) {
+                    const dataStr = JSON.stringify(website, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: "application/json"});
+                    const url = URL.createObjectURL(dataBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${website.name || 'Untitled Website'}.arvia.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showMessage(`Exporting "${escapeHtml(website.name)}"...`, 'success');
+                } else {
+                    showMessage("Could not find website to export.", 'error');
+                }
+            }
+
+            function importWebsite() {
+                importFileInput.click();
+            }
+
+            function handleImportFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        if (!importedData.id || !importedData.name || !importedData.settings || !importedData.pages) {
+                            throw new Error("Invalid or corrupted file format.");
+                        }
+
+                        const existingIndex = allWebsites.findIndex(w => w.id === importedData.id);
+                        if (existingIndex !== -1) {
+                            allWebsites[existingIndex] = importedData;
+                             showMessage(`Website "${escapeHtml(importedData.name)}" updated from import.`, 'success');
+                        } else {
+                            allWebsites.push(importedData);
+                             showMessage(`Website "${escapeHtml(importedData.name)}" imported successfully.`, 'success');
+                        }
+                        
+                        saveAllWebsitesToLocalStorage();
+                        renderWebsiteList();
+
+                    } catch (err) {
+                        console.error("Import error:", err);
+                        showMessage(`Import failed: ${err.message}`, 'error');
+                    } finally {
+                        importFileInput.value = '';
+                    }
+                };
+                reader.readAsText(file);
             }
 
             function deleteWebsiteFromLibraryConfirmed() {
@@ -213,10 +270,12 @@
                 linkedinUrlInput.value = '';
                 document.querySelector('input[name="showScrollToTop"][value="yes"]').checked = true;
                 pagesData = getDefaultPages();
-                externalLinks = []; // Initialize external links for new website
+                externalLinks = [];
                 currentPreviewPageId = pagesData.find(p => p.isDefault)?.id || pagesData[0]?.id || null;
+                
+                saveCurrentWebsiteToLibrary();
                 renderPages();
-                renderExternalLinks(); // Render external links for new website
+                renderExternalLinks();
                 updateLogoPreview();
                 openPreview();
                 showMessage("New website started!", 'info');
@@ -229,14 +288,19 @@
                     website.name.toLowerCase().includes(filter.toLowerCase())
                 );
                 if (filteredWebsites.length === 0) {
-                    websiteList.innerHTML = '<p class="modal-message">No websites found matching your search.</p>';
+                    websiteList.innerHTML = '<p class="modal-message">No websites found. Add one or import a project file!</p>';
                     return;
                 }
                 filteredWebsites.forEach(website => {
                     const websiteItem = document.createElement('div');
                     websiteItem.className = 'website-item';
                     websiteItem.dataset.id = website.id;
-                    websiteItem.innerHTML = `<span class="website-name">${escapeHtml(website.name)}</span><div class="website-actions"><span class="website-action-icon" data-action="open-website" data-id="${website.id}" aria-label="Open Website"><i class="fas fa-folder-open"></i></span><span class="website-action-icon" data-action="delete-website" data-id="${website.id}" aria-label="Delete Website"><i class="fas fa-trash-alt"></i></span></div>`;
+                    websiteItem.innerHTML = `<span class="website-name">${escapeHtml(website.name)}</span>
+                    <div class="website-actions">
+                        <span class="website-action-icon" data-action="open-website" data-id="${website.id}" aria-label="Open Website"><i class="fas fa-folder-open"></i></span>
+                        <span class="website-action-icon" data-action="export-website" data-id="${website.id}" aria-label="Export Website"><i class="fas fa-file-export"></i></span>
+                        <span class="website-action-icon" data-action="delete-website" data-id="${website.id}" aria-label="Delete Website"><i class="fas fa-trash-alt"></i></span>
+                    </div>`;
                     websiteList.appendChild(websiteItem);
                 });
             }
@@ -649,7 +713,7 @@
                     const paragraphs = tempDiv.querySelectorAll('p');
                     for (const p of paragraphs) {
                         const text = p.textContent.trim();
-                        if (text.length > 50) { // Look for a reasonably long paragraph
+                        if (text.length > 50) {
                             return text.substring(0, 160) + (text.length > 160 ? '...' : '');
                         }
                     }
@@ -737,7 +801,6 @@
                         </div>`;
                     pageList.appendChild(pageItem);
                 });
-                // Add event listeners for new radio buttons
                 pageList.querySelectorAll('input[name="defaultPage"]').forEach(radio => {
                     radio.addEventListener('change', (event) => {
                         setDefaultPage(event.target.value);
@@ -750,8 +813,8 @@
                 pagesData.forEach(p => {
                     p.isDefault = (p.id === pageId);
                 });
-                renderPages(); // Re-render to update radio button states
-                openPreview(); // Update preview to show default page
+                renderPages();
+                openPreview();
                 showMessage(`Page "${escapeHtml(pagesData.find(p => p.id === pageId)?.name || '')}" set as default.`, 'success');
             }
 
@@ -761,7 +824,6 @@
                     const newOrder = pagesData.length > 0 ? Math.max(...pagesData.map(p => p.order)) + 1 : 1;
                     const newPage = { id: newId, name: name.trim(), order: newOrder, isDefault: false, content: '' };
                     
-                    // If this is the first page, make it default
                     if (pagesData.length === 0) {
                         newPage.isDefault = true;
                     }
@@ -797,7 +859,6 @@
                     pagesData = pagesData.filter(p => p.id !== pageIdToDelete);
                     pagesData.forEach((p, i) => p.order = i + 1);
                     
-                    // If the deleted page was the default, set a new default
                     if (!pagesData.some(p => p.isDefault) && pagesData.length > 0) {
                         pagesData[0].isDefault = true;
                     } else if (pagesData.length === 0) {
@@ -822,7 +883,7 @@
                 const targetIndex = direction === 'up' ? index - 1 : index + 1;
                 if (targetIndex >= 0 && targetIndex < pagesData.length) {
                     [pagesData[index].order, pagesData[targetIndex].order] = [pagesData[targetIndex].order, pagesData[index].order];
-                    pagesData.sort((a, b) => a.order - b.order); // Re-sort after swap
+                    pagesData.sort((a, b) => a.order - b.order);
                     renderPages();
                     openPreview();
                     showMessage(`Page "${escapeHtml(pagesData[index].name)}" moved ${direction}.`, 'info');
@@ -933,7 +994,6 @@
                     pageLink.textContent = page.name;
                     pageLink.dataset.id = page.id;
                     pageLink.addEventListener('click', () => {
-                        // Update hash and let hashchange listener handle content
                         if (previewIframe && previewIframe.contentWindow) {
                             previewIframe.contentWindow.location.hash = page.id;
                         }
@@ -947,7 +1007,7 @@
                 const websiteName = nameInput.value.trim();
                 const logoUrl = logoUrlInput.value.trim();
                 const faviconUrl = faviconUrlInput.value.trim();
-                const metaDescription = generateAutoDescription(); // Use auto-generated if empty
+                const metaDescription = generateAutoDescription();
                 const ogTitle = ogTitleInput.value.trim();
                 const ogDescription = ogDescriptionInput.value.trim();
                 const ogImageUrl = ogImageUrlInput.value.trim();
@@ -965,25 +1025,23 @@
 
                 const siteTitle = websiteName || 'My ARvia Website';
                 
-                // Determine the initial page to load in the iframe based on default or first page
                 const defaultPage = pagesData.find(p => p.isDefault) || pagesData[0];
                 const initialPageContent = defaultPage ? defaultPage.content : '<h1>Welcome!</h1><p>No page selected or content available.</p>';
                 const initialPageId = defaultPage ? defaultPage.id : null;
 
                 let sidebarHtml = '';
                 pagesData.sort((a, b) => a.order - b.order).forEach(page => {
-                    const activeClass = page.id === initialPageId ? 'active' : ''; // Use initialPageId for active state
+                    const activeClass = page.id === initialPageId ? 'active' : '';
                     sidebarHtml += `<div class="sidebar-page-item-iframe ${activeClass}" data-id="${page.id}">${escapeHtml(page.name)}</div>`;
                 });
                 
-                // Pagination logic
                 const currentPageIndex = pagesData.findIndex(p => p.id === initialPageId);
                 const prevButtonHtml = `<button id="prevPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex <= 0 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> </button>`;
                 const nextButtonHtml = `<button id="nextPageBtnIframe" class="pagination-button-iframe" ${currentPageIndex >= pagesData.length - 1 ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
 
                 let qaSchema = [];
                 const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = initialPageContent; // Use initialPageContent for schema generation
+                tempDiv.innerHTML = initialPageContent;
                 tempDiv.querySelectorAll('.qa-block').forEach(qaBlock => {
                     const qaType = qaBlock.dataset.qaType;
                     let question = '';
@@ -1034,7 +1092,7 @@
                     .arvia-logo-iframe {width: 2.5rem; height: 2.5rem; margin-right: 0.625rem; border-radius: 0.3125rem; object-fit: contain;}
                     .arvia-text-iframe {font-family: 'Comic Sans MS', cursive, sans-serif; font-size: 2rem; font-weight: bold; color: #805BE9; margin-left: 0.3125rem;}
                     .menu-button-iframe {font-size: 1.8rem; color: #BB86FC; cursor: pointer; display: none;}
-                    .preview-content-area-iframe {display: flex; flex-grow: 1; width: 100%; overflow: hidden; margin-top: calc(4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}); height: calc(100vh - (4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}));} /* Adjusted margin-top for secondary header */
+                    .preview-content-area-iframe {display: flex; flex-grow: 1; width: 100%; overflow: hidden; margin-top: calc(4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}); height: calc(100vh - (4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}));}
                     .preview-sidebar-iframe {width: 15.625rem; background-color: #0a0a0a; border-right: 2px solid #FFFFFF; flex-shrink: 0; overflow-y: auto; padding: 1.25rem 0; display: flex; flex-direction: column; height: 100%;}
                     .sidebar-logo-section-iframe {display: none;}
                     .sidebar-page-item-iframe {padding: 0.625rem 1.25rem; color: #FFFFFF; cursor: pointer; transition: background-color 0.3s ease, color 0.3s ease; border-radius: 0.3125rem; margin: 0.25rem 0.625rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
@@ -1085,7 +1143,7 @@
                         .main-content-iframe {padding: 1.25rem;}
                         .sidebar-logo-section-iframe {display: none;}
                         .mobile-sidebar-iframe .sidebar-logo-section-iframe {display: flex;}
-                        .preview-content-area-iframe {margin-top: calc(4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}); height: calc(100vh - (4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}));} /* Adjusted margin-top for secondary header */
+                        .preview-content-area-iframe {margin-top: calc(4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}); height: calc(100vh - (4.5rem + ${externalLinksHtml ? '2.5rem' : '0rem'}));}
                     }
                     @media (min-width: 48.0625rem) {
                         .menu-button-iframe {display: none;}
@@ -1237,7 +1295,7 @@
                     }
                     saveCurrentWebsiteToLibrary();
                     renderPages();
-                    renderExternalLinks(); // Re-render external links after parsing
+                    renderExternalLinks();
                     updateLogoPreview();
                     openPreview();
                 } catch (error) {
@@ -1315,7 +1373,6 @@
                 generateWebsiteInfoPage();
                 renderPreviewSidebar(previewFixedSidebar);
                 renderPreviewSidebar(mobileSidebarPageList);
-                // Ensure currentPreviewPageId is set to the default or first page before updating iframe
                 currentPreviewPageId = pagesData.find(p => p.isDefault)?.id || pagesData[0]?.id || null;
                 updateIframeContent();
                 showView(previewView);
@@ -1479,6 +1536,8 @@
                 websiteList = document.getElementById('websiteList');
                 addNewWebsiteBtn = document.getElementById('addNewWebsiteBtn');
                 websiteSearchInput = document.getElementById('websiteSearchInput');
+                importWebsiteBtn = document.getElementById('importWebsiteBtn');
+                importFileInput = document.getElementById('importFileInput');
                 confirmDeleteWebsiteModalOverlay = document.getElementById('confirmDeleteWebsiteModalOverlay');
                 websiteToDeleteNameSpan = document.getElementById('websiteToDeleteName');
                 cancelDeleteWebsiteBtn = document.getElementById('cancelDeleteWebsiteBtn');
@@ -1547,7 +1606,6 @@
                         const target = event.target.closest('.action-icon, .page-item');
                         if (!target) return;
                         const pageItemId = target.closest('.page-item')?.dataset.id;
-                        // Prevent opening editor when clicking on action icons or radio button
                         if (target.classList.contains('action-icon')) {
                             const action = target.dataset.action;
                             const id = target.dataset.id;
@@ -1555,7 +1613,7 @@
                             else if (action === 'delete') openConfirmDeleteModal(id);
                             else if (action === 'move-up') movePage(id, 'up');
                             else if (action === 'move-down') movePage(id, 'down');
-                        } else if (target.tagName !== 'INPUT') { // If not an action icon or radio button, open editor
+                        } else if (target.tagName !== 'INPUT') {
                             openPageEditor(pageItemId);
                         }
                     });
@@ -1661,18 +1719,21 @@
                 if (confirmDeleteExternalLinkModalOverlay) confirmDeleteExternalLinkModalOverlay.addEventListener('click', (event) => { if (event.target === confirmDeleteExternalLinkModalOverlay) closeConfirmDeleteExternalLinkModal(); });
 
                 if (addNewWebsiteBtn) addNewWebsiteBtn.addEventListener('click', startNewWebsite);
+                if (importWebsiteBtn) importWebsiteBtn.addEventListener('click', importWebsite);
+                if (importFileInput) importFileInput.addEventListener('change', handleImportFile);
                 if (websiteList) {
                     websiteList.addEventListener('click', (event) => {
-                        const target = event.target.closest('.website-action-icon, .website-item');
+                        const target = event.target.closest('.website-action-icon');
                         if (!target) return;
-                        const websiteId = target.closest('.website-item')?.dataset.id;
+                        const websiteId = target.dataset.id;
                         if (target.dataset.action === 'open-website') loadWebsiteFromLibrary(websiteId);
+                        else if (target.dataset.action === 'export-website') exportWebsite(websiteId);
                         else if (target.dataset.action === 'delete-website') openConfirmDeleteWebsiteModal(websiteId);
                     });
                 }
                 if (websiteSearchInput) websiteSearchInput.addEventListener('input', (event) => renderWebsiteList(event.target.value));
                 if (cancelDeleteWebsiteBtn) cancelDeleteWebsiteBtn.addEventListener('click', closeConfirmDeleteWebsiteModal);
-                   if (confirmDeleteWebsiteBtn) confirmDeleteWebsiteBtn.addEventListener('click', deleteWebsiteFromLibraryConfirmed);
+                if (confirmDeleteWebsiteBtn) confirmDeleteWebsiteBtn.addEventListener('click', deleteWebsiteFromLibraryConfirmed);
                 if (confirmDeleteWebsiteModalOverlay) confirmDeleteWebsiteModalOverlay.addEventListener('click', (event) => { if (event.target === confirmDeleteWebsiteModalOverlay) closeConfirmDeleteWebsiteModal(); });
 
                 loadAllWebsitesFromLocalStorage();
