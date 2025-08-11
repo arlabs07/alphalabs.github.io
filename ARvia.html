@@ -166,7 +166,7 @@
         .website-item {display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.25rem; border-bottom: 1px solid #333333; color: #FFFFFF; cursor: pointer; transition: background-color 0.3s ease;}
         .website-item:hover {background-color: #2a2a2a;}
         .website-item:last-child {border-bottom: none;}
-        .website-name {font-size: 1.1rem; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 100px);}
+        .website-name {font-size: 1.1rem; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 150px);}
         .website-actions {display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;}
         .website-action-icon {cursor: pointer; font-size: 1.1rem; color: #FFFFFF; transition: color 0.3s ease, transform 0.3s ease;}
         .website-action-icon:hover {color: #BB86FC; transform: scale(1.1);}
@@ -403,7 +403,8 @@
                 <h2>Your Websites</h2>
                 <div class="library-actions">
                     <input type="text" id="websiteSearchInput" class="library-search-input" placeholder="Search websites...">
-                    <button id="addNewWebsiteBtn" class="library-action-button"><i class="fas fa-plus"></i> </button>
+                    <button id="importWebsiteBtn" class="library-action-button"><i class="fas fa-upload"></i></button>
+                    <button id="addNewWebsiteBtn" class="library-action-button"><i class="fas fa-plus"></i></button>
                 </div>
             </div>
             <div id="websiteList" class="page-list"></div>
@@ -816,6 +817,8 @@
         <span id="messageText"></span>
         <button id="messageCloseBtn" class="message-close-btn"><i class="fas fa-times"></i></button>
     </div>
+
+    <input type="file" id="importFileInput" class="hidden" accept=".json,.arvia">
 
     <script src="script.js" type="text/javascript" charset="utf-8"></script>
 </body>
