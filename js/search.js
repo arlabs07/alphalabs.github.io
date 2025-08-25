@@ -793,7 +793,8 @@
         - Links ([text](url))
         - Blockquotes (> text)
         - Tables (| header | header |\n|-------|-------|\n| cell | cell |)
-        - KaTeX math formulas (inline with $...$, display with $$...$$ or \\[...\\])
+        - KaTeX math formulas (inline with $...$, display with $$...$$)
+        - you are strictly prohibited to use katex,hr.
       `;
       const response = await fetch(CONFIG.pollinationsApiUrl, {
         method: 'POST',
